@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Arapça Konuşma ve Kalıp Ustası (250 Kalıp & Kırık Meal)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Babel (JSX derleyici) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useMemo, useCallback } from 'https://esm.sh/react@18.2.0';
+    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+    import {
+      BookOpen, Repeat, Layers, Search, Volume2, CheckCircle2, Sparkles,
+      Flame, Trophy, Plus, ArrowRightLeft, Brain, MessageSquare,
+      GraduationCap, Home, Baby, Clock, Sliders, ChevronRight,
+      ChevronLeft, Eye, EyeOff, Check, HelpCircle, UserCheck,
+      Bookmark, Play, Smartphone, Maximize2, Rocket, Globe
+    } from 'https://esm.sh/lucide-react@0.344.0';
+
+    // ==========================================
+    // 1. VERİ TABANI: 250 CÜMLE KALIBI VE KIRIK MEALLERİ
+    // ==========================================
+    const BASE_100_PATTERNS = [
+      { id: 1, category: 'joker', ar: 'أُرِيدُ أَنْ ...', trPron: 'Urîdu en ...', tr: '... yapmak istiyorum.', hasSlot: true, slotType: 'verb_en', femNote: 'Kadın/Erkek ortak kullanır (Ben istiyorum).', exampleAr: 'أُرِيدُ أَنْ أَشْرَبَ الشَّايَ.', examplePron: 'Urîdu en eşrabeş-şâye.', exampleTr: 'Çay içmek istiyorum.' },
+      { id: 2, category: 'joker', ar: 'لَا أُرِيدُ أَنْ ...', trPron: 'Lâ urîdu en ...', tr: '... yapmak istemiyorum.', hasSlot: true, slotType: 'verb_en', femNote: 'Kadın/Erkek ortak kullanır.', exampleAr: 'لَا أُرِيدُ أَنْ أَخْرُجَ الْآنَ.', examplePron: 'Lâ urîdu en ahruce el-âne.', exampleTr: 'Şu an çıkmak istemiyorum.' },
+      { id: 3, category: 'joker', ar: 'يَجِبُ عَلَيَّ أَنْ ...', trPron: 'Yecibu aleyye en ...', tr: '... yapmam gerekiyor.', hasSlot: true, slotType: 'verb_en', femNote: 'Kadın/Erkek ortak kullanır.', exampleAr: 'يَجِبُ عَلَيَّ أَنْ أُحَضِّرَ الدَّرْسَ.', examplePron: 'Yecibu aleyye en uhaddıred-derse.', exampleTr: 'Dersi hazırlamam gerekiyor.' },
+      { id: 4, category: 'joker', ar: 'يَجِبُ عَلَيْكَ أَنْ ...', trPron: 'Yecibu aleyke en ...', tr: '... yapman gerekiyor.', hasSlot: true, slotType: 'verb_en_you', femAr: 'يَجِبُ عَلَيْكِ أَنْ ...', femPron: 'Yecibu aleyki en ...', femNote: 'Eşinize/kızınıza söylerken "aleyki" (عَلَيْكِ) kullanılır.', exampleAr: 'يَجِبُ عَلَيْكَ أَنْ تَدْرُسَ جَيِّدًا.', examplePron: 'Yecibu aleyke en tedruse ceyyiden.', exampleTr: 'İyi çalışman gerekiyor.' },
+      { id: 5, category: 'joker', ar: 'هَلْ يُمْكِنُكَ أَنْ ...؟', trPron: 'Hel yumkinuke en ...?', tr: '... yapabilir misin?', hasSlot: true, slotType: 'verb_en_you', femAr: 'هَلْ يُمْكِنُكِ أَنْ ...؟', femPron: 'Hel yumkinuki en ...?', femNote: 'Dişil hitapta "yumkinuki" (يُمْكِنُكِ) denir.', exampleAr: 'هَلْ يُمْكِنُكَ أَنْ تُسَاعِدَنِي؟', examplePron: 'Hel yumkinuke en tusâidenî?', exampleTr: 'Bana yardım edebilir misin?' },
+      { id: 6, category: 'joker', ar: 'أَحْتَاجُ إِلَى ...', trPron: 'Ahtâcu ilâ ...', tr: '...-e ihtiyacım var.', hasSlot: true, slotType: 'noun', femNote: 'Kadın/Erkek ortak kullanır.', exampleAr: 'أَحْتَاجُ إِلَى قَلَمٍ وَدَفْتَرٍ.', examplePron: 'Ahtâcu ilâ kalemin ve defterin.', exampleTr: 'Bir kalem ve deftere ihtiyacım var.' },
+      { id: 7, category: 'joker', ar: 'أَنَا ذَاهِبٌ إِلَى ...', trPron: 'Ene zâhibun ilâ ...', tr: '...-e gidiyorum.', hasSlot: true, slotType: 'place', femAr: 'أَنَا ذَاهِبَةٌ إِلَى ...', femPron: 'Ene zâhibetun ilâ ...', femNote: 'Konuşan kişi kadınsa "zâhibetun" (ذَاهِبَةٌ) der.', exampleAr: 'أَنَا ذَاهِبٌ إِلَى الْمَدْرَسَةِ.', examplePron: 'Ene zâhibun ilel-medreseti.', exampleTr: 'Okula gidiyorum.' },
+      { id: 8, category: 'joker', ar: 'لَيْسَ عِنْدِي وَقْتٌ لِـ ...', trPron: 'Leyse indî vaktun li-...', tr: '... için vaktim yok.', hasSlot: true, slotType: 'noun', femNote: 'Kadın/Erkek ortak kullanır.', exampleAr: 'لَيْسَ عِنْدِي وَقْتٌ لِلالَّعِبِ.', examplePron: 'Leyse indî vaktun lil-la’ibi.', exampleTr: 'Oyun için vaktim yok.' },
+      { id: 9, category: 'joker', ar: 'مِنْ فَضْلِكَ، أَعْطِنِي ...', trPron: 'Min fadlike, a’tınî ...', tr: 'Lütfen bana ... ver.', hasSlot: true, slotType: 'noun', femAr: 'مِنْ فَضْلِكِ، أَعْطِينِي ...', femPron: 'Min fadliki, a’tînî ...', femNote: 'Eşinize/kızınıza hitapta "Min fadliki, a’tînî" denir.', exampleAr: 'مِنْ فَضْلِكَ، أَعْطِنِي الْمِفْتَاحَ.', examplePron: 'Min fadlike, a’tınî el-miftâha.', exampleTr: 'Lütfen bana anahtarı ver.' },
+      { id: 10, category: 'joker', ar: 'أَيْنَ وَضَعْتَ ...؟', trPron: 'Eyne vada’te ...?', tr: '...-i nereye koydun?', hasSlot: true, slotType: 'noun', femAr: 'أَيْنَ وَضَعْتِ ...؟', femPron: 'Eyne vada’ti ...?', femNote: 'Eşinize sorarken "Eyne vada’ti" (وَضَعْتِ) kullanılır.', exampleAr: 'أَيْنَ وَضَعْتَ الْحَقِيبَةَ؟', examplePron: 'Eyne vada’tel-hakîbete?', exampleTr: 'Çantayı nereye koydun?' },
+      { id: 11, category: 'joker', ar: 'أَبْحَثُ عَنْ ...', trPron: 'Ebhasu an ...', tr: '...-i arıyorum.', hasSlot: true, slotType: 'noun', exampleAr: 'أَبْحَثُ عَنْ نَظَّارَتِي.', examplePron: 'Ebhasu an nazzâratî.', exampleTr: 'Gözlüğümü arıyorum.' },
+      { id: 12, category: 'joker', ar: 'نَسِيتُ أَنْ ...', trPron: 'Nesîtu en ...', tr: '... yapmayı unuttum.', hasSlot: true, slotType: 'verb_en', exampleAr: 'نَسِيتُ أَنْ أَشْتَرِيَ الْخُبْزَ.', examplePron: 'Nesîtu en eşteriyel-hubze.', exampleTr: 'Ekmek almayı unuttum.' },
+      { id: 13, category: 'joker', ar: 'سَأَفْعَلُ هَذَا بَعْدَ ...', trPron: 'Se-ef’alu hâzâ ba’de ...', tr: 'Bunu ...-den sonra yapacağım.', hasSlot: true, slotType: 'noun', exampleAr: 'سَأَفْعَلُ هَذَا بَعْدَ الدَّرْسِ.', examplePron: 'Se-ef’alu hâzâ ba’ded-dersi.', exampleTr: 'Bunu dersten sonra yapacağım.' },
+      { id: 14, category: 'joker', ar: 'مَاذَا تَفْعَلُ فِي ...؟', trPron: 'Mâzâ tef’alu fî ...?', tr: '...-de ne yapıyorsun?', hasSlot: true, slotType: 'place', femAr: 'مَاذَا تَفْعَلِينَ فِي ...؟', femPron: 'Mâzâ tef’alîne fî ...?', exampleAr: 'مَاذَا تَفْعَلُ فِي الْمَطْبَخِ؟', examplePron: 'Mâzâ tef’alu fil-matbahı?', exampleTr: 'Mutfakta ne yapıyorsun?' },
+      { id: 15, category: 'joker', ar: 'لِمَاذَا لَمْ ...؟', trPron: 'Limâzâ lem ...?', tr: 'Neden ... yapmadın?', hasSlot: false, exampleAr: 'لِمَاذَا لَمْ تَكْتُبِ الدَّرْسَ؟', examplePron: 'Limâzâ lem tektubid-derse?', exampleTr: 'Neden dersi yazmadın?' },
+      { id: 16, category: 'joker', ar: 'مَتَى سَنَذْهَبُ إِلَى ...؟', trPron: 'Metâ senezhebu ilâ ...?', tr: '...-e ne zaman gideceğiz?', hasSlot: true, slotType: 'place', exampleAr: 'مَتَى سَنَذْهَبُ إِلَى الْحَدِيقَةِ؟', examplePron: 'Metâ senezhebu ilel-hadîkati?', exampleTr: 'Parka ne zaman gideceğiz?' },
+      { id: 17, category: 'joker', ar: 'أُفَضِّلُ ... عَلَى ...', trPron: 'Ufeddilu ... alâ ...', tr: '...-i, ...-e tercih ederim.', hasSlot: true, slotType: 'noun', exampleAr: 'أُفَضِّلُ الشَّايَ عَلَى الْقَهْوَةِ.', examplePron: 'Ufeddiluş-şâye alel-kahveti.', exampleTr: 'Çayı kahveye tercih ederim.' },
+      { id: 18, category: 'joker', ar: 'مِنَ الْمُمْكِنِ أَنْ ...', trPron: 'Minel-mumkini en ...', tr: '... olması mümkündür / ...-ebilirim.', hasSlot: true, slotType: 'verb_en', exampleAr: 'مِنَ الْمُمْكِنِ أَنْ أَتَأَخَّرَ قَلِيلًا.', examplePron: 'Minel-mumkini en eteahhara kalîlen.', exampleTr: 'Biraz gecikmem mümkün.' },
+      { id: 19, category: 'joker', ar: 'أَظُنُّ أَنَّ ...', trPron: 'Ezunnu enne ...', tr: 'Sanırım ki / Bence ...', hasSlot: false, exampleAr: 'أَظُنُّ أَنَّ الِامْتِحَانَ سَهْلٌ.', examplePron: 'Ezunnu ennel-imtihâne sehlun.', exampleTr: 'Sanırım sınav kolay.' },
+      { id: 20, category: 'joker', ar: 'لَا أَسْتَطِيعُ أَنْ ... الْآنَ.', trPron: 'Lâ estatîu en ... el-âne.', tr: 'Şu an ... yapamam.', hasSlot: true, slotType: 'verb_en', exampleAr: 'لَا أَسْتَطِيعُ أَنْ أَتَكَلَّمَ الْآنَ.', examplePron: 'Lâ estatîu en etekelleme el-âne.', exampleTr: 'Şu an konuşamam.' },
+      { id: 21, category: 'home', ar: 'مَاذَا سَنَطْبُخُ الْيَوْمَ؟', trPron: 'Mâzâ senatbuhu el-yevme?', tr: 'Bugün ne pişireceğiz?', hasSlot: false },
+      { id: 22, category: 'home', ar: 'الطَّعَامُ جَاهِزٌ، تَعَالَوْا إِلَى الْمَائِدَةِ.', trPron: 'Et-taâmu câhizun, teâlev ilel-mâide.', tr: 'Yemek hazır, sofraya gelin.', hasSlot: false },
+      { id: 23, category: 'home', ar: 'هَلْ نَحْتَاجُ إِلَى شَيْءٍ مِنَ السُّوقِ؟', trPron: 'Hel nahtâcu ilâ şey’in mines-sûk?', tr: 'Marketten bir şeye ihtiyacımız var mı?', hasSlot: false },
+      { id: 24, category: 'home', ar: 'سَأَعُودُ إِلَى الْبَيْتِ فِي السَّاعَةِ ...', trPron: 'Se-eûdu ilel-beyti fis-sâati ...', tr: 'Eve saat ...-de döneceğim.', hasSlot: false },
+      { id: 25, category: 'home', ar: 'أَنَا مُتْعَبٌ جِدًّا الْيَوْمَ.', trPron: 'Ene mut’abun cidden el-yevme.', tr: 'Bugün çok yorgunum.', hasSlot: false, femAr: 'أَنَا مُتْعَبَةٌ جِدًّا الْيَوْمَ.', femPron: 'Ene mut’abetun cidden el-yevme.' },
+      { id: 26, category: 'home', ar: 'هَلْ شَرِبْتِ الْقَهْوَةَ؟', trPron: 'Hel şeribtil-kahvete?', tr: 'Kahve içtin mi? (Eşe hitaben)', hasSlot: false },
+      { id: 27, category: 'home', ar: 'دَعِينَا نَشْرَبِ الشَّايَ مَعًا.', trPron: 'Deînâ neşrabiş-şâye mean.', tr: 'Gel birlikte çay içelim. (Eşe hitaben)', hasSlot: false },
+      { id: 28, category: 'home', ar: 'مَنْ سَيَأْخُذُ الْأَوْلَادَ مِنَ الْمَدْرَسَةِ؟', trPron: 'Men se-ye’huzul-evlâde minel-medreseti?', tr: 'Çocukları okuldan kim alacak?', hasSlot: false },
+      { id: 29, category: 'home', ar: 'هَلْ دَفَعْتَ فَاتُورَةَ ...؟', trPron: 'Hel defa’te fâtûrate ...?', tr: '... faturasını ödedin mi?', hasSlot: true, slotType: 'noun' },
+      { id: 30, category: 'home', ar: 'الْبَيْتُ يَحْتَاجُ إِلَى تَنْظِيفٍ.', trPron: 'El-beytu yahtâcu ilâ tanzîfin.', tr: 'Evin temizliğe ihtiyacı var.', hasSlot: false },
+      { id: 31, category: 'home', ar: 'سَأُصَلِّي ثُمَّ آتِي.', trPron: 'Se-usallî summe âtî.', tr: 'Namaz kılıp geleceğim.', hasSlot: false },
+      { id: 32, category: 'home', ar: 'جَزَاكِ اللَّهُ خَيْرًا، سَلِمَتْ يَدَاكِ.', trPron: 'Cezâkillâhu hayran, selimet yedâki.', tr: 'Allah razı olsun, ellerine sağlık. (Eşe hitaben)', hasSlot: false },
+      { id: 33, category: 'home', ar: 'مَا رَأْيُكِ فِي ...؟', trPron: 'Mâ re’yuki fî ...?', tr: '... hakkında ne düşünüyorsun? (Eşe hitaben)', hasSlot: true, slotType: 'noun' },
+      { id: 34, category: 'home', ar: 'سَنَزُورُ عَائِلَتِي هَذَا الْأُسْبُوعَ.', trPron: 'Senezûru âiletî hâzel-usbûa.', tr: 'Bu hafta ailemi ziyaret edeceğiz.', hasSlot: false },
+      { id: 35, category: 'home', ar: 'لَا تَنْسَيْ أَنْ تُوقِظِينِي فِي السَّاعَةِ ...', trPron: 'Lâ tensey en tûkızînî fis-sâati ...', tr: 'Beni saat ...-de uyandırmayı unutma. (Eşe hitaben)', hasSlot: false },
+      { id: 36, category: 'home', ar: 'الْجَوُّ بَارِدٌ، أَغْلِقِ النَّافِذَةَ.', trPron: 'El-cevvu bâridun, ağlikin-nâfizete.', tr: 'Hava soğuk, pencereyi kapat.', hasSlot: false },
+      { id: 37, category: 'home', ar: 'أَيْنَ مِفْتَاحُ السَّيَّارَةِ؟', trPron: 'Eyne miftâhus-seyyâreti?', tr: 'Arabanın anahtarı nerede?', hasSlot: false },
+      { id: 38, category: 'home', ar: 'سَأَخْرُجُ قَلِيلًا وَأَعُودُ.', trPron: 'Se-ahrucu kalîlen ve eûdu.', tr: 'Biraz çıkıp döneceğim.', hasSlot: false },
+      { id: 39, category: 'home', ar: 'هَلْ كُلُّ شَيْءٍ عَلَى مَا يُرَامُ؟', trPron: 'Hel kullu şey’in alâ mâ yurâm?', tr: 'Her şey yolunda mı?', hasSlot: false },
+      { id: 40, category: 'home', ar: 'تُصْبِحُونَ عَلَى خَيْرٍ.', trPron: 'Tusbihûne alâ hayrin.', tr: 'İyi geceler (Allah rahatlık versin).', hasSlot: false },
+      { id: 41, category: 'kids', ar: 'هَيَّا اسْتَيْقِظْ، حَانَ وَقْتُ الْمَدْرَسَةِ.', trPron: 'Heyyâ isteykız, hâne vaktul-medreseti.', tr: 'Hadi uyan, okul vakti geldi.', hasSlot: false },
+      { id: 42, category: 'kids', ar: 'هَلْ أَكْمَلْتَ وَاجِبَكَ الْمَنْزِلِيَّ؟', trPron: 'Hel ekmelte vâcibekel-menziliyye?', tr: 'Ev ödevini bitirdin mi?', hasSlot: false },
+      { id: 43, category: 'kids', ar: 'اِغْسِلْ يَدَيْكَ قَبْلَ الْأَكْلِ.', trPron: 'İğsil yedeyke kablel-ekli.', tr: 'Yemekten önce ellerini yıka.', hasSlot: false },
+      { id: 44, category: 'kids', ar: 'نَظِّفْ أَسْنَانَكَ قَبْلَ النَّوْمِ.', trPron: 'Nazzif esnâneke kablen-nevmi.', tr: 'Uyumadan önce dişlerini fırçala.', hasSlot: false },
+      { id: 45, category: 'kids', ar: 'اِلْبَسْ مَلَابِسَكَ بِسُرْعَةٍ.', trPron: 'İlbes melâbiseke bi-sur’atin.', tr: 'Kıyafetlerini hızlıca giy.', hasSlot: false },
+      { id: 46, category: 'kids', ar: 'لَا تَلْعَبْ بِالْهَاتِفِ كَثِيرًا.', trPron: 'Lâ tel’ab bil-hâtifi kesîran.', tr: 'Telefonla çok oynama.', hasSlot: false },
+      { id: 47, category: 'kids', ar: 'رَتِّبْ غُرْفَتَكَ مِنْ فَضْلِكَ.', trPron: 'Rettib ğurfeteke min fadlike.', tr: 'Lütfen odanı topla.', hasSlot: false },
+      { id: 48, category: 'kids', ar: 'مَاذَا فَعَلْتَ فِي الْمَدْرَسَةِ الْيَوْمَ؟', trPron: 'Mâzâ fealte fil-medreseti el-yevme?', tr: 'Bugün okulda ne yaptın?', hasSlot: false },
+      { id: 49, category: 'kids', ar: 'كُلْ طَعَامَكَ كُلَّهُ.', trPron: 'Kul taâmeke kullehu.', tr: 'Yemeğinin hepsini ye.', hasSlot: false },
+      { id: 50, category: 'kids', ar: 'حَانَ وَقْتُ النَّوْمِ، اِذْهَبْ إِلَى فِرَاشِكَ.', trPron: 'Hâne vaktun-nevmi, izheb ilâ firâşike.', tr: 'Uyku vakti geldi, yatağına git.', hasSlot: false },
+      { id: 51, category: 'kids', ar: 'لَا تَتَشَاجَرْ مَعَ أَخِيكَ / أُخْتِكَ.', trPron: 'Lâ teteşâcer mea ahîke / uhtike.', tr: 'Kardeşinle kavga etme.', hasSlot: false },
+      { id: 52, category: 'kids', ar: 'أَنَا فَخُورٌ بِكَ جِدًّا.', trPron: 'Ene fahûrun bike cidden.', tr: 'Seninle çok gurur duyuyorum.', hasSlot: false },
+      { id: 53, category: 'kids', ar: 'اِسْمَعْ كَلَامَ أُمِّكَ.', trPron: 'İsma’ kelâme ummike.', tr: 'Annenin sözünü dinle.', hasSlot: false },
+      { id: 54, category: 'kids', ar: 'إِذَا أَكْمَلْتَ دَرْسَكَ، سَنَذْهَبُ إِلَى الْحَدِيقَةِ.', trPron: 'İzâ ekmelte derseke, senezhebu ilel-hadîkati.', tr: 'Dersini bitirirsen parka gideceğiz.', hasSlot: false },
+      { id: 55, category: 'kids', ar: 'كُنْ حَذِرًا، لَا تَرْكُضْ هُنَا.', trPron: 'Kun haziran, lâ terkud hunâ.', tr: 'Dikkatli ol, burada koşma.', hasSlot: false },
+      { id: 56, category: 'kids', ar: 'هَلْ يُؤْلِمُكَ شَيْءٌ؟', trPron: 'Hel yu’limuke şey’un?', tr: 'Bir yerin ağrıyor mu?', hasSlot: false },
+      { id: 57, category: 'kids', ar: 'أَحْضِرْ حَقِيبَتَكَ وَتَعَالَ.', trPron: 'Ahdır hakîbeteke ve teâle.', tr: 'Çantanı getir ve gel.', hasSlot: false },
+      { id: 58, category: 'kids', ar: 'أَحْسَنْتَ يَا بُنَيَّ، عَمَلٌ رَائِعٌ!', trPron: 'Ahsente yâ buneyye, amelun râiun!', tr: 'Aferin oğlum/yavrum, harika iş!', hasSlot: false },
+      { id: 59, category: 'kids', ar: 'لَا تَبْكِ، أَنَا هُنَا مَعَكَ.', trPron: 'Lâ tebki, ene hunâ meake.', tr: 'Ağlama, ben burada seninleyim.', hasSlot: false },
+      { id: 60, category: 'kids', ar: 'سَأَحْكِي لَكَ قِصَّةً قَبْلَ النَّوْمِ.', trPron: 'Se-ahkî leke kıssaten kablen-nevmi.', tr: 'Uyumadan önce sana bir hikaye anlatacağım.', hasSlot: false },
+      { id: 61, category: 'school', ar: 'السَّلَامُ عَلَيْكُمْ يَا طُلَّابُ، كَيْفَ حَالُكُمُ الْيَوْمَ؟', trPron: 'Es-selâmu aleykum yâ tullâb, keyfe hâlukum el-yevme?', tr: 'Selamünaleyküm öğrenciler, bugün nasılsınız?', hasSlot: false },
+      { id: 62, category: 'school', ar: 'اِفْتَحُوا كُتُبَكُمْ عَلَى الصَّفْحَةِ ...', trPron: 'İftahû kutubekum alas-safhati ...', tr: 'Kitaplarınızı ... sayfadan açın.', hasSlot: false },
+      { id: 63, category: 'school', ar: 'اِنْتَبِهُوا إِلَيَّ وَاسْتَمِعُوا جَيِّدًا.', trPron: 'İntebihû ileyye vestemiû ceyyiden.', tr: 'Bana dikkat edin ve iyi dinleyin.', hasSlot: false },
+      { id: 64, category: 'school', ar: 'مَنْ يَعْرِفُ الْجَوَابَ الصَّحِيحَ؟', trPron: 'Men ya’riful-cevâbes-sahîha?', tr: 'Doğru cevabı kim biliyor?', hasSlot: false },
+      { id: 65, category: 'school', ar: 'اِرْفَعْ يَدَكَ قَبْلَ أَنْ تَتَكَلَّمَ.', trPron: 'İrfa’ yedeke kable en tetekelleme.', tr: 'Konuşmadan önce parmak kaldır.', hasSlot: false },
+      { id: 66, category: 'school', ar: 'اُكْتُبُوا هَذَا عَلَى الدَّفْتَرِ.', trPron: 'Uktubû hâzâ aled-defteri.', tr: 'Bunu deftere yazın.', hasSlot: false },
+      { id: 67, category: 'school', ar: 'هَلْ فَهِمْتُمُ الدَّرْسَ أَمْ أُعِيدُ مَرَّةً أُخْرَى؟', trPron: 'Hel fehimtumud-derse em uîdu merraten uhrâ?', tr: 'Dersi anladınız mı yoksa bir kez daha tekrar edeyim mi?', hasSlot: false },
+      { id: 68, category: 'school', ar: 'هَلْ هُنَاكَ أَيُّ سُؤَالٍ؟', trPron: 'Hel hunâke eyyu suâlin?', tr: 'Herhangi bir soru var mı?', hasSlot: false },
+      { id: 69, category: 'school', ar: 'مَنْ هُوَ الْغَائِبُ الْيَوْمَ؟', trPron: 'Men huvel-ğâibu el-yevme?', tr: 'Bugün kim yok (devamsız)?', hasSlot: false },
+      { id: 70, category: 'school', ar: 'هُدُوءً مِنْ فَضْلِكُمْ، لَا تَتَكَلَّمُوا.', trPron: 'Hudûen min fadlikum, lâ tetekellemû.', tr: 'Sessizlik lütfen, konuşmayın.', hasSlot: false },
+      { id: 71, category: 'school', ar: 'مَوْضُوعُنَا الْيَوْمَ هُوَ ...', trPron: 'Mevdûunâ el-yevme huve ...', tr: 'Bugünkü konumuz ...', hasSlot: true, slotType: 'noun' },
+      { id: 72, category: 'school', ar: 'اِقْرَأِ النَّصَّ بِصَوْتٍ مُرْتَفِعٍ.', trPron: 'İkra’in-nassa bi-savtin murtefiin.', tr: 'Metni yüksek sesle oku.', hasSlot: false },
+      { id: 73, category: 'school', ar: 'الِامْتِحَانُ سَيَكُونُ فِي الْأُسْبُوعِ الْقَادِمِ.', trPron: 'El-imtihânu se-yekûnu fil-usbûil-kâdimi.', tr: 'Sınav gelecek hafta olacak.', hasSlot: false },
+      { id: 74, category: 'school', ar: 'إِجَابَتُكَ صَحِيحَةٌ، بَارَكَ اللَّهُ فِيكَ.', trPron: 'İcâbetuke sahîhatun, bârakallâhu fîke.', tr: 'Cevabın doğru, Allah seni mübarek kılsın (aferin).', hasSlot: false },
+      { id: 75, category: 'school', ar: 'إِجَابَتُكَ قَرِيبَةٌ، حَاوِلْ مَرَّةً أُخْرَى.', trPron: 'İcâbetuke karîbetun, hâvil merraten uhrâ.', tr: 'Cevabın yakın, bir kez daha dene.', hasSlot: false },
+      { id: 76, category: 'school', ar: 'لَا تَنْسَوْا أَنْ تُحْضِرُوا ... غَدًا.', trPron: 'Lâ tensev en tuhdırû ... ğaden.', tr: 'Yarın ... getirmeyi unutmayın.', hasSlot: true, slotType: 'noun' },
+      { id: 77, category: 'school', ar: 'عِنْدِي حِصَّةٌ فِي الصَّفِّ ... الْآنَ.', trPron: 'İndî hissatun fis-saffi ... el-âne.', tr: 'Şu an ... sınıfta dersim var.', hasSlot: false },
+      { id: 78, category: 'school', ar: 'سَأُحَضِّرُ أَسْئِلَةَ الِامْتِحَانِ الْيَوْمَ.', trPron: 'Se-uhaddıru es’iletel-imtihâni el-yevme.', tr: 'Bugün sınav sorularını hazırlayacağım.', hasSlot: false },
+      { id: 79, category: 'school', ar: 'يَجِبُ أَنْ أُدْخِلَ الدَّرَجَاتِ فِي النِّظَامِ.', trPron: 'Yecibu en udhiled-derecâti fin-nizâmi.', tr: 'Notları sisteme girmem gerekiyor.', hasSlot: false },
+      { id: 80, category: 'school', ar: 'لَدَيْنَا اجْتِمَاعٌ مَعَ الْمُدِيرِ وَالْمُعَلِّمِينَ.', trPron: 'Ledeynâ ictimâun meal-mudîri vel-muallimîne.', tr: 'Müdür ve öğretmenlerle toplantımız var.', hasSlot: false },
+      { id: 81, category: 'school', ar: 'مَا هِيَ حِصَّتُكَ التَّالِيَةُ؟', trPron: 'Mâ hiye hissatuket-tâliyetu?', tr: 'Sonraki dersin ne? (Meslektaşa hitaben)', hasSlot: false },
+      { id: 82, category: 'school', ar: 'انْتَهَى الدَّرْسُ، يُمْكِنُكُمُ الْخُرُوجُ إِلَى الِاسْتِرَاحَةِ.', trPron: 'İntehed-dersu, yumkinukumul-hurûcu ilel-istirâhati.', tr: 'Ders bitti, teneffüse çıkabilirsiniz.', hasSlot: false },
+      { id: 83, category: 'school', ar: 'رَاجِعُوا هَذَا الْمَوْضُوعَ فِي الْبَيْتِ.', trPron: 'Râciû hâzel-mevdûa fil-beyti.', tr: 'Bu konuyu evde tekrar edin.', hasSlot: false },
+      { id: 84, category: 'school', ar: 'أَغْلِقُوا الْكُتُبَ وَاسْتَعِدُّوا لِلِاخْتِبَارِ.', trPron: 'Ağlikul-kutube vesteiddû lil-ihtibâri.', tr: 'Kitapları kapatın ve teste hazırlanın.', hasSlot: false },
+      { id: 85, category: 'school', ar: 'أَنَا الْمُعَلِّمُ الْمُنَاوِبُ الْيَوْمَ.', trPron: 'Enel-muallimul-munâvibu el-yevme.', tr: 'Bugün nöbetçi öğretmen benim.', hasSlot: false },
+      { id: 86, category: 'social', ar: 'كَمِ السَّاعَةُ الْآنَ؟', trPron: 'Kemis-sâatu el-âne?', tr: 'Şu an saat kaç?', hasSlot: false },
+      { id: 87, category: 'social', ar: 'تَأَخَّرْنَا، يَجِبُ أَنْ نُسْرِعَ.', trPron: 'Teahharnâ, yecibu en nusria.', tr: 'Geç kaldık, acele etmeliyiz.', hasSlot: false },
+      { id: 88, category: 'social', ar: 'بِكَمْ هَذَا مِنْ فَضْلِكَ؟', trPron: 'Bi-kem hâzâ min fadlike?', tr: 'Bu ne kadar acaba?', hasSlot: false },
+      { id: 89, category: 'social', ar: 'أُرِيدُ أَنْ أَشْتَرِيَ كِيلُو مِنْ ...', trPron: 'Urîdu en eşteriye kîlû min ...', tr: 'Bir kilo ... almak istiyorum.', hasSlot: true, slotType: 'noun' },
+      { id: 90, category: 'social', ar: 'هَلْ يُمْكِنُ الدَّفْعُ بِالْبِطَاقَةِ؟', trPron: 'Hel yumkinud-def’u bil-bitâkati?', tr: 'Kartla ödeme yapılabilir mi?', hasSlot: false },
+      { id: 91, category: 'social', ar: 'فِي الْيَوْمِ التَّالِي / فِي الْأُسْبُوعِ الْمَاضِي...', trPron: 'Fil-yevmit-tâlî / Fil-usbûil-mâdî...', tr: 'Ertesi gün / Geçen hafta...', hasSlot: false },
+      { id: 92, category: 'social', ar: 'سَأَتَّصِلُ بِكَ بَعْدَ قَلِيلٍ.', trPron: 'Se-ettesılu bike ba’de kalîlin.', tr: 'Seni birazdan arayacağım.', hasSlot: false },
+      { id: 93, category: 'social', ar: 'أَنَا مَشْغُولٌ الْآنَ، نَتَكَلَّمُ لَاحِقًا.', trPron: 'Ene meşğûlun el-âne, netekellemu lâhikan.', tr: 'Şu an meşgulüm, daha sonra konuşuruz.', hasSlot: false },
+      { id: 94, category: 'social', ar: 'إِنْ شَاءَ اللَّهُ نَلْتَقِي غَدًا.', trPron: 'İnşâallâhu neltekî ğaden.', tr: 'İnşallah yarın görüşürüz.', hasSlot: false },
+      { id: 95, category: 'social', ar: 'عَفْوًا، لَمْ أَفْهَمْ مَا قُلْتَ.', trPron: 'Afven, lem efhem mâ kulte.', tr: 'Affedersiniz, ne dediğinizi anlamadım.', hasSlot: false },
+      { id: 96, category: 'social', ar: 'كَيْفَ يُمْكِنُنِي الذَّهَابُ إِلَى ...؟', trPron: 'Keyfe yumkinunî ez-zehâbu ilâ ...?', tr: '...-e nasıl gidebilirim?', hasSlot: true, slotType: 'place' },
+      { id: 97, category: 'social', ar: 'الْحَمْدُ لِلَّهِ عَلَى كُلِّ حَالٍ.', trPron: 'Elhamdulillâhi alâ kulli hâlin.', tr: 'Her halükarda Allah’a hamdolsun.', hasSlot: false },
+      { id: 98, category: 'social', ar: 'تَقَبَّلَ اللَّهُ مِنَّا وَمِنْكُمْ.', trPron: 'Tekabbelallâhu minnâ ve minkum.', tr: 'Allah bizden de sizden de kabul etsin.', hasSlot: false },
+      { id: 99, category: 'social', ar: 'شَفَاكَ اللَّهُ وَعَافَاكَ.', trPron: 'Şefâkallâhu ve âfâke.', tr: 'Allah şifa ve afiyet versin (Geçmiş olsun).', hasSlot: false },
+      { id: 100, category: 'social', ar: 'فِي أَمَانِ اللَّهِ، مَعَ السَّلَامَةِ.', trPron: 'Fî emânillâh, meas-selâme.', tr: 'Allah’a emanet olun, güle güle.', hasSlot: false }
+    ];
+
+    const EXTRA_150_RAW = [
+      [101, 'joker', 'عَلَيَّ أَنْ أَبْدَأَ بِـ ...', 'Aleyye en ebdee bi-...', '... ile başlamam lazım.', 'عَلَيَّ: benim üzerime/lazım | أَنْ: -mek/-mak | أَبْدَأَ: başlamam | بِـ: ile'],
+      [102, 'joker', 'هَلْ أَنْتَ مُتَأَكِّدٌ مِنْ ...؟', 'Hel ente muteekkidun min ...?', '... konusunda emin misin?', 'هَلْ: mı/mi | أَنْتَ: sen | مُتَأَكِّدٌ: emin | مِنْ: -den/konusunda'],
+      [103, 'joker', 'مِنَ الْأَفْضَلِ أَنْ ...', 'Minel-efdalî en ...', '... yapmamız/yapman daha iyidir.', 'مِنَ: -den | الْأَفْضَلِ: en iyi/daha iyi | أَنْ: -mek/-mak'],
+      [104, 'joker', 'أَنَا مُسْتَعِدٌّ لِـ ...', 'Ene mustaiddun li-...', '... için hazırım.', 'أَنَا: ben | مُسْتَعِدٌّ: hazırım | لِـ: için'],
+      [105, 'joker', 'لَا دَاعِيَ لِـ ...', 'Lâ dâiye li-...', '...-e gerek yok.', 'لَا: yok | دَاعِيَ: gerek/sebep | لِـ: için/-e'],
+      [106, 'joker', 'كُنْتُ أُرِيدُ أَنْ ...', 'Kuntu urîdu en ...', '... yapmak istiyordum.', 'كُنْتُ: idim | أُرِيدُ: istiyorum | أَنْ: -mek/-mak'],
+      [107, 'joker', 'يَبْدُو أَنَّ الْأَمْرَ ...', 'Yebdû ennel-emra ...', 'Görünüşe göre bu iş ...', 'يَبْدُو: görünüyor | أَنَّ: ki | الْأَمْرَ: iş/durum'],
+      [108, 'joker', 'أَتَمَنَّى أَنْ ...', 'Etemennâ en ...', '... olmasını temenni ederim / dilerim.', 'أَتَمَنَّى: diliyorum/temenni ederim | أَنْ: -mesini/-masını'],
+      [109, 'joker', 'أَخَافُ أَنْ ...', 'Ehâfu en ...', '...-mekten korkuyorum / endişe ediyorum.', 'أَخَافُ: korkuyorum | أَنْ: -mekten/-maktan'],
+      [110, 'joker', 'قَرَّرْتُ أَنْ ...', 'Karrartu en ...', '... yapmaya karar verdim.', 'قَرَّرْتُ: karar verdim | أَنْ: -meye/-maya'],
+      [111, 'joker', 'أُحَاوِلُ أَنْ ...', 'Uhâvilu en ...', '... yapmaya çalışıyorum.', 'أُحَاوِلُ: çabalıyorum/çalışıyorum | أَنْ: -meye/-maya'],
+      [112, 'joker', 'تَعَوَّدْتُ عَلَى ...', 'Teavvedtu alâ ...', '...-e alıştım.', 'تَعَوَّدْتُ: alıştım | عَلَى: üzerine/-e'],
+      [113, 'joker', 'أَنَا مُهْتَمٌّ بِـ ...', 'Ene muhtemmun bi-...', '... ile ilgileniyorum.', 'أَنَا: ben | مُهْتَمٌّ: ilgiliyim/önemsiyorum | بِـ: ile'],
+      [114, 'joker', 'مَا زِلْتُ أَنْتَظِرُ ...', 'Mâ ziltu entazıru ...', 'Hâlâ ... bekliyorum.', 'مَا زِلْتُ: hâlâ devam ediyorum | أَنْتَظِرُ: bekliyorum'],
+      [115, 'joker', 'أَوْشَكْتُ عَلَى الْاِنْتِهَاءِ مِنْ ...', 'Evşektu alel-intihâi min ...', '...-i bitirmek üzereyim.', 'أَوْشَكْتُ: yaklaştım/üzereyim | عَلَى الْاِنْتِهَاءِ: bitirmeye | مِنْ: -den'],
+      [116, 'joker', 'لَيْسَ مِنَ السَّهْلِ أَنْ ...', 'Leyse mines-sehli en ...', '... yapmak kolay değil.', 'لَيْسَ: değildir | مِنَ السَّهْلِ: kolaydan/kolay | أَنْ: -mek'],
+      [117, 'joker', 'مِنَ الضَّرُورِيِّ أَنْ ...', 'Mined-darûriyyi en ...', '... yapmak zorunludur / şarttır.', 'مِنَ الضَّرُورِيِّ: zaruridir/gerekir | أَنْ: -mek/-mak'],
+      [118, 'joker', 'هَلْ تَسْمَحُ لِي بِـ ...؟', 'Hel tesmahu lî bi-...?', 'Bana ... için izin verir misin?', 'هَلْ: mı | تَسْمَحُ: izin verirsin | لِي: bana | بِـ: ile/için'],
+      [119, 'joker', 'لَا أَعْرِفُ كَيْفَ ...', 'Lâ a’rifu keyfe ...', 'Nasıl ... yapacağımı bilmiyorum.', 'لَا أَعْرِفُ: bilmiyorum | كَيْفَ: nasıl'],
+      [120, 'joker', 'أَعْتَقِدُ أَنَّ هَذَا ...', 'A’tekıdu enne hâzâ ...', 'İnanıyorum ki / Bence bu ...', 'أَعْتَقِدُ: inanıyorum/düşünüyorum | أَنَّ: ki | هَذَا: bu'],
+      [121, 'joker', 'بِالنِّسْبَةِ لِي، هَذَا الْمَوْضُوعُ مُهِمٌّ.', 'Bin-nisbeti lî, hâzel-mevdûu muhimmun.', 'Bana göre bu konu önemlidir.', 'بِالنِّسْبَةِ: göre/nispetle | لِي: bana | هَذَا: bu | الْمَوْضُوعُ: konu | مُهِمٌّ: önemlidir'],
+      [122, 'joker', 'عَلَى الرَّغْمِ مِنْ ذَلِكَ، سَأُحَاوِلُ.', 'Aler-rağmi min zâlike, se-uhâvilu.', 'Buna rağmen deneyeceğim.', 'عَلَى الرَّغْمِ: rağmen | مِنْ ذَلِكَ: buna/bundan | سَأُحَاوِلُ: deneyeceğim'],
+      [123, 'joker', 'لَا أَتَذَكَّرُ أَيْنَ ...', 'Lâ etezekkeru eyne ...', 'Nerede ... olduğunu hatırlamıyorum.', 'لَا أَتَذَكَّرُ: hatırlamıyorum | أَيْنَ: nerede'],
+      [124, 'joker', 'هَلْ يُوجَدُ هُنَا ...؟', 'Hel yûcedu hunâ ...?', 'Burada ... var mı?', 'هَلْ: mı/mi | يُوجَدُ: bulunur/var | هُنَا: burada'],
+      [125, 'joker', 'أَنَا بِحَاجَةٍ مَاسَّةٍ إِلَى ...', 'Ene bi-hâcetin mâssetin ilâ ...', '...-e acil ihtiyacım var.', 'أَنَا: ben | بِحَاجَةٍ: ihtiyaç içindeyim | مَاسَّةٍ: acil/şiddetli | إِلَى: -e/-a'],
+      [126, 'joker', 'كُلَّمَا قَرَأْتُ فَهِمْتُ أَكْثَرَ.', 'Kullemâ kara’tu fehimtu eksera.', 'Okudukça daha çok anladım.', 'كُلَّمَا: her ne zaman/-dıkça | قَرَأْتُ: okudum | فَهِمْتُ: anladım | أَكْثَرَ: daha çok'],
+      [127, 'joker', 'بِدُونِ شَكٍّ، هَذَا صَحِيحٌ.', 'Bidûni şekkin, hâzâ sahîhun.', 'Şüphesiz bu doğrudur.', 'بِدُونِ: olmaksızın/-sız | شَكٍّ: şüphe | هَذَا: bu | صَحِيحٌ: doğrudur'],
+      [128, 'joker', 'عَلَى أَيِّ حَالٍ، شُكْرًا لَكَ.', 'Alâ eyyi hâlin, şukran leke.', 'Her halükarda sana teşekkür ederim.', 'عَلَى: üzerine | أَيِّ: hangi/her | حَالٍ: durum | شُكْرًا: teşekkür | لَكَ: sana'],
+      [129, 'joker', 'يَسُرُّنِي أَنْ أَسْمَعَ هَذَا.', 'Yesurrunî en esmea hâzâ.', 'Bunu duymak beni sevindirdi.', 'يَسُرُّنِي: beni sevindirir | أَنْ: -mek | أَسْمَعَ: duymam | هَذَا: bunu'],
+      [130, 'joker', 'لَا يَهُمُّنِي مَا يَقُولُونَ.', 'Lâ yehummunî mâ yekûlûne.', 'Ne dedikleri beni ilgilendirmiyor.', 'لَا يَهُمُّنِي: beni ilgilendirmez/önemsetmez | مَا: ne/şey | يَقُولُونَ: diyorlar'],
+      [131, 'home', 'هَلْ أَغْلَقْتِ بَابَ الْمَنْزِلِ؟', 'Hel ağlakti bâbel-menzili?', 'Evin kapısını kapattın mı? (Eşe)', 'هَلْ: mı | أَغْلَقْتِ: sen kapattın | بَابَ: kapısını | الْمَنْزِلِ: evin'],
+      [132, 'home', 'نَفِدَ الْحَلِيبُ وَالْبَيْضُ فِي الثَّلَّاجَةِ.', 'Nefidel-halîbu vel-beydu fis-sellâceti.', 'Buzdolabında süt ve yumurta bitti.', 'نَفِدَ: tükendi/bitti | الْحَلِيبُ: süt | وَالْبَيْضُ: ve yumurta | فِي الثَّلَّاجَةِ: buzdolabında'],
+      [133, 'home', 'سَأَشْتَرِي الْخُضْرَوَاتِ وَالْفَوَاكِهَ.', 'Se-eşterî el-hudravâti vel-fevâkihe.', 'Sebze ve meyve satın alacağım.', 'سَأَشْتَرِي: satın alacağım | الْخُضْرَوَاتِ: sebzeler | وَالْفَوَاكِهَ: ve meyveler'],
+      [134, 'home', 'أَيْنَ شَاحِنُ الْهَاتِفِ؟', 'Eyne şâhinul-hâtifi?', 'Telefonun şarj aleti nerede?', 'أَيْنَ: nerede | شَاحِنُ: şarj aleti | الْهَاتِفِ: telefonun'],
+      [135, 'home', 'اِنْقَطَعَتِ الْكَهْرَبَاءُ فَجْأَةً.', 'İnkataatil-kehrabâu fec’eten.', 'Elektrik aniden kesildi.', 'اِنْقَطَعَتِ: kesildi | الْكَهْرَبَاءُ: elektrik | فَجْأَةً: aniden'],
+      [136, 'home', 'الْإِنْتَرْنِتُ ضَعِيفٌ جِدًّا الْيَوْمَ.', 'El-internetu daîfun cidden el-yevme.', 'İnternet bugün çok zayıf.', 'الْإِنْتَرْنِتُ: internet | ضَعِيفٌ: zayıftır | جِدًّا: çok | الْيَوْمَ: bugün'],
+      [137, 'home', 'هَلْ شَغَّلْتِ الْغَسَّالَةَ؟', 'Hel şağğaltil-ğassâlete?', 'Çamaşır makinesini çalıştırdın mı?', 'هَلْ: mı | شَغَّلْتِ: çalıştırdın (sen) | الْغَسَّالَةَ: çamaşır makinesini'],
+      [138, 'home', 'سَأُرَتِّبُ غُرْفَةَ الْجُلُوسِ.', 'Se-urettibu ğurfetel-culûsi.', 'Oturma odasını toplayacağım.', 'سَأُرَتِّبُ: düzenleyeceğim/toplayacağım | غُرْفَةَ: odasını | الْجُلُوسِ: oturma'],
+      [139, 'home', 'الْغَدَاءُ لَذِيذٌ جِدًّا الْيَوْمَ.', 'El-ğadâu lezîzun cidden el-yevme.', 'Öğle yemeği bugün çok lezzetli.', 'الْغَدَاءُ: öğle yemeği | لَذِيذٌ: lezzetlidir | جِدًّا: çok | الْيَوْمَ: bugün'],
+      [140, 'home', 'ضَعِي الْأَطْبَاقَ عَلَى الطَّاوِلَةِ.', 'Daî el-atbâka alet-tâvileti.', 'Tabakları masanın üzerine koy.', 'ضَعِي: koy (sen) | الْأَطْبَاقَ: tabakları | عَلَى: üzerine | الطَّاوِلَةِ: masanın'],
+      [141, 'home', 'سَأُرْمِي الْقُمَامَةَ قَبْلَ الذَّهَابِ.', 'Se-urmî el-kumâmete kablez-zehâbi.', 'Gitmeden önce çöpü atacağım.', 'سَأُرْمِي: atacağım | الْقُمَامَةَ: çöpü | قَبْلَ: önce | الذَّهَابِ: gitmekten'],
+      [142, 'home', 'مَنْ يَدُقُّ الْبَابَ فِي هَذِهِ السَّاعَةِ؟', 'Men yedukkul-bâbe fî hâzihis-sâati?', 'Bu saatte kapıyı kim çalıyor?', 'مَنْ: kim | يَدُقُّ: çalıyor | الْبَابَ: kapıyı | فِي هَذِهِ: bu ...-de | السَّاعَةِ: saatte'],
+      [143, 'home', 'ضُيُوفُنَا سَيَأْتُونَ بَعْدَ صَلَاةِ الْمَغْرِبِ.', 'Duyûfunâ se-ye’tûne ba’de salâtil-mağribi.', 'Misafirlerimiz akşam namazından sonra gelecekler.', 'ضُيُوفُنَا: misafirlerimiz | سَيَأْتُونَ: gelecekler | بَعْدَ: sonra | صَلَاةِ الْمَغْرِبِ: akşam namazından'],
+      [144, 'home', 'أَهْلًا وَسَهْلًا، تَفَضَّلُوا بِالدُّخُولِ.', 'Ehlen ve sehlen, tefaddalû bid-duhûli.', 'Hoş geldiniz, buyurun içeri girin.', 'أَهْلًا وَسَهْلًا: hoş geldiniz | تَفَضَّلُوا: buyurun | بِالدُّخُولِ: girişle/içeri'],
+      [145, 'home', 'الْبَيْتُ بَيْتُكُمْ، خُذُوا رَاحَتَكُمْ.', 'El-beytu beytukum, huzû râhatekum.', 'Ev sizin eviniz, rahatınıza bakın.', 'الْبَيْتُ: ev | بَيْتُكُمْ: sizin evinizdir | خُذُوا: alın | رَاحَتَكُمْ: rahatınızı'],
+      [146, 'home', 'افْتَحِي السِّتَارَةَ لِيَدْخُلَ الضَّوْءُ.', 'İftahî es-sitârate li-yedhuled-dav’u.', 'Işık girmesi için perdeyi aç.', 'افْتَحِي: aç | السِّتَارَةَ: perdeyi | لِيَدْخُلَ: girmesi için | الضَّوْءُ: ışık'],
+      [147, 'home', 'أَطْفِئِ الْمِصْبَاحَ قَبْلَ أَنْ تَنَامَ.', 'Atfi’il-mısbâha kable en tenâme.', 'Uyumadan önce lambayı söndür.', 'أَطْفِئِ: söndür/kapat | الْمِصْبَاحَ: lambayı | قَبْلَ أَنْ: -meden önce | تَنَامَ: uyuman'],
+      [148, 'home', 'هَلْ كَوَيْتِ قَمِيصِي الْأَبْيَضَ؟', 'Hel keveyti kamîsî el-ebyada?', 'Beyaz gömleğimi ütüledin mi?', 'هَلْ: mi | كَوَيْتِ: ütüledin | قَمِيصِي: gömleğimi | الْأَبْيَضَ: beyaz'],
+      [149, 'home', 'جِيرَانُنَا أُنَاسٌ طَيِّبُونَ جِدًّا.', 'Cîrânunâ unâsun tayyibûne cidden.', 'Komşularımız çok iyi insanlar.', 'جِيرَانُنَا: komşularımız | أُنَاسٌ: insanlardır | طَيِّبُونَ: iyilerdir | جِدًّا: çok'],
+      [150, 'home', 'سَأَسْتَحِمُّ ثُمَّ أَبْدَأُ بِالْعَمَلِ.', 'Se-estahimmu summe ebdeu bil-ameli.', 'Duş alıp sonra işe başlayacağım.', 'سَأَسْتَحِمُّ: duş alacağım | ثُمَّ: sonra | أَبْدَأُ: başlarım | بِالْعَمَلِ: işe'],
+      [151, 'home', 'هَلْ بَقِيَ خُبْزٌ فِي الْمَطْبَخِ؟', 'Hel bakiye hubzun fil-matbahı?', 'Mutfakta ekmek kaldı mı?', 'هَلْ: mı | بَقِيَ: kaldı | خُبْزٌ: ekmek | فِي الْمَطْبَخِ: mutfakta'],
+      [152, 'home', 'سَخِّنِي الْحَسَاءَ قَلِيلًا مِنْ فَضْلِكِ.', 'Sahhınî el-hasâe kalîlen min fadliki.', 'Lütfen çorbayı biraz ısıt.', 'سَخِّنِي: ısıt | الْحَسَاءَ: çorbayı | قَلِيلًا: biraz | مِنْ فَضْلِكِ: lütfen'],
+      [153, 'home', 'أَيْنَ وَلَّاعَةُ الْفُرْنِ؟', 'Eyne vellâatul-furni?', 'Fırının/ocağın çakmağı nerede?', 'أَيْنَ: nerede | وَلَّاعَةُ: çakmağı | الْفُرْنِ: fırının/ocağın'],
+      [154, 'home', 'نَحْتَاجُ إِلَى تَغْيِيرِ أُنْبُوبِ الْغَازِ.', 'Nahtâcu ilâ tağyîri unbûbil-ğâzi.', 'Tüpü (gaz tüpünü) değiştirmemiz gerekiyor.', 'نَحْتَاجُ: ihtiyacımız var | إِلَى تَغْيِيرِ: değiştirmeye | أُنْبُوبِ الْغَازِ: gaz tüpünü'],
+      [155, 'home', 'لَا تَقْلَقِي، سَأَحُلُّ هَذِهِ الْمُشْكِلَةَ.', 'Lâ taklakî, se-ehullu hâzihil-muşkilete.', 'Endişelenme, bu sorunu çözeceğim.', 'لَا تَقْلَقِي: endişelenme | سَأَحُلُّ: çözeceğim | هَذِهِ: bu | الْمُشْكِلَةَ: sorunu'],
+      [156, 'home', 'شُكْرًا عَلَى صَبْرِكِ وَاهْتِمَامِكِ.', 'Şukran alâ sabriki vehtimâmiki.', 'Sabrın ve ilgin için teşekkür ederim.', 'شُكْرًا: teşekkürler | عَلَى: üzerine/için | صَبْرِكِ: sabrın | وَاهْتِمَامِكِ: ve ilgin'],
+      [157, 'home', 'الْأَوْلَادُ نَامُوا، يُمْكِنُنَا التَّحَدُّثُ الْآنَ.', 'El-evlâdu nâmû, yumkinunâ et-tehaddusu el-âne.', 'Çocuklar uyudu, şimdi konuşabiliriz.', 'الْأَوْلَادُ: çocuklar | نَامُوا: uyudular | يُمْكِنُنَا: yapabiliriz | التَّحَدُّثُ: konuşmak | الْآنَ: şimdi'],
+      [158, 'home', 'كَمْ مِيزَانِيَّتُنَا لِهَذَا الشَّهْرِ؟', 'Kem mîzâniyyetunâ li-hâzeş-şehri?', 'Bu ay için bütçemiz ne kadar?', 'كَمْ: ne kadar | مِيزَانِيَّتُنَا: bütçemiz | لِهَذَا: bu ... için | الشَّهْرِ: ay'],
+      [159, 'home', 'سَأَسْتَيْقِظُ مُبَكِّرًا لِصَلَاةِ الْفَجْرِ.', 'Se-esteykızu mubekkiran li-salâtil-fecri.', 'Sabah namazı için erken uyanacağım.', 'سَأَسْتَيْقِظُ: uyanacağım | مُبَكِّرًا: erkenden | لِصَلَاةِ: namazı için | الْفَجْرِ: sabah/fecir'],
+      [160, 'home', 'اللَّهُمَّ بَارِكْ لَنَا فِي بَيْتِنَا وَأَوْلَادِنَا.', 'Allâhumme bârik lenâ fî beytinâ ve evlâdinâ.', 'Allah’ım evimizi ve çocuklarımızı bize mübarek kıl.', 'اللَّهُمَّ: Allah’ım | بَارِكْ: bereketli/mübarek kıl | لَنَا: bize | فِي بَيْتِنَا: evimizde | وَأَوْلَادِنَا: ve çocuklarımızda'],
+      [161, 'kids', 'قُلْ بِسْمِ اللَّهِ قَبْلَ الطَّعَامِ.', 'Kul bismillâhi kablet-taâmi.', 'Yemekten önce Bismillah de.', 'قُلْ: de/söyle | بِسْمِ اللَّهِ: Allah’ın adıyla | قَبْلَ: önce | الطَّعَامِ: yemekten'],
+      [162, 'kids', 'قُلِ الْحَمْدُ لِلَّهِ بَعْدَ الْأَكْلِ.', 'Kulil-hamdulillâhi ba’del-ekli.', 'Yemekten sonra Elhamdülillah de.', 'قُلِ: de | الْحَمْدُ لِلَّهِ: Allah’a hamdolsun | بَعْدَ: sonra | الْأَكْلِ: yemekten'],
+      [163, 'kids', 'كُلْ بِيَدِكَ الْيُمْنَى يَا بُنَيَّ.', 'Kul bi-yedikel-yumnâ yâ buneyye.', 'Sağ elinle ye yavrum.', 'كُلْ: ye | بِيَدِكَ: elinle | الْيُمْنَى: sağ | يَا بُنَيَّ: ey oğlum/yavrum'],
+      [164, 'kids', 'شَارِكْ أَلْعَابَكَ مَعَ إِخْوَتِكَ.', 'Şârik el’âbeke mea ihvetike.', 'Oyuncaklarını kardeşlerinle paylaş.', 'شَارِكْ: paylaş | أَلْعَابَكَ: oyuncaklarını | مَعَ: ile | إِخْوَتِكَ: kardeşlerin'],
+      [165, 'kids', 'لَا تَرْفَعْ صَوْتَكَ فِي الْبَيْتِ.', 'Lâ terfa’ savteke fil-beyti.', 'Evde sesini yükseltme.', 'لَا تَرْفَعْ: yükseltme | صَوْتَكَ: sesini | فِي الْبَيْتِ: evde'],
+      [166, 'kids', 'اِعْتَذِرْ مِنْ أَخِيكَ فَوْرًا.', 'İ’tezir min ahîke fevran.', 'Hemen kardeşinden özür dile.', 'اِعْتَذِرْ: özür dile | مِنْ: -den | أَخِيكَ: kardeşinden | فَوْرًا: derhal/hemen'],
+      [167, 'kids', 'قَبِّلْ يَدَ جَدِّكَ وَجَدَّتِكَ.', 'Kabbil yede ceddike ve ceddetike.', 'Dedenin ve ninenin elini öp.', 'قَبِّلْ: öp | يَدَ: elini | جَدِّكَ: dedenin | وَجَدَّتِكَ: ve ninenin'],
+      [168, 'kids', 'حَافِظْ عَلَى نَظَافَةِ مَلَابِسِكَ.', 'Hâfız alâ nazâfeti melâbisike.', 'Kıyafetlerinin temizliğini koru (temiz tut).', 'حَافِظْ: koru/dikkat et | عَلَى نَظَافَةِ: temizliğine | مَلَابِسِكَ: elbiselerinin'],
+      [169, 'kids', 'ارْبِطْ حِذَاءَكَ جَيِّدًا لِئَلَّا تَسْقُطَ.', 'İrbit hizâeke ceyyiden li-ellâ teskuta.', 'Düşmemek için ayakkabını iyi bağla.', 'ارْبِطْ: bağla | حِذَاءَكَ: ayakkabını | جَيِّدًا: iyice | لِئَلَّا: -memek için | تَسْقُطَ: düşmen'],
+      [170, 'kids', 'اِلْبَسْ مِعْطَفَكَ، الْجَوُّ مُمْطِرٌ.', 'İlbes mi’tafeke, el-cevvu mumtirun.', 'Montunu giy, hava yağmurlu.', 'اِلْبَسْ: giy | مِعْطَفَكَ: montunu/paltonu | الْجَوُّ: hava | مُمْطِرٌ: yağmurludur'],
+      [171, 'kids', 'لَا تَقْتَرِبْ مِنَ التِّلْفَازِ كَثِيرًا.', 'Lâ takterib minet-tilfâzi kesîran.', 'Televizyona çok yaklaşma.', 'لَا تَقْتَرِبْ: yaklaşma | مِنَ التِّلْفَازِ: televizyona | كَثِيرًا: çok'],
+      [172, 'kids', 'اِنْتَهَى وَقْتُ الرُّسُومِ الْمُتَحَرِّكَةِ.', 'İntehâ vaktur-rusûmil-muteharriketi.', 'Çizgi film vakti bitti.', 'اِنْتَهَى: bitti | وَقْتُ: vakti | الرُّسُومِ الْمُتَحَرِّكَةِ: çizgi filmin'],
+      [173, 'kids', 'هَلْ حَفِظْتَ السُّورَةَ الْجَدِيدَةَ؟', 'Hel hafıztes-sûratel-cedîdete?', 'Yeni sureyi ezberledin mi?', 'هَلْ: mi | حَفِظْتَ: ezberledin | السُّورَةَ: sureyi | الْجَدِيدَةَ: yeni'],
+      [174, 'kids', 'تَعَالَ نَقْرَأِ الْقُرْآنَ مَعًا.', 'Teâle nakra’il-Kur’âne mean.', 'Gel birlikte Kur’an okuyalım.', 'تَعَالَ: gel | نَقْرَأِ: okuyalım | الْقُرْآنَ: Kur’an’ı | مَعًا: birlikte'],
+      [175, 'kids', 'كَيْفَ كَانَ امْتِحَانُ الرِّيَاضِيَّاتِ؟', 'Keyfe kâne imtihânur-riyâdıyyâti?', 'Matematik sınavı nasıldı?', 'كَيْفَ: nasıl | كَانَ: idi/oldu | امْتِحَانُ: sınavı | الرِّيَاضِيَّاتِ: matematiğin'],
+      [176, 'kids', 'أَرِنِي دَفْتَرَكَ لِأُرَاجِعَهُ.', 'Erinî deftereke li-urâciahu.', 'Kontrol etmem için defterini bana göster.', 'أَرِنِي: bana göster | دَفْتَرَكَ: defterini | لِأُرَاجِعَهُ: onu kontrol etmem için'],
+      [177, 'kids', 'اِشْرَبِ الْحَلِيبَ لِتَكْبُرَ وَتَقْوَى.', 'İşrabil-halîbe li-tekbura ve takvâ.', 'Büyümek ve güçlenmek için sütü iç.', 'اِشْرَبِ: iç | الْحَلِيبَ: sütü | لِتَكْبُرَ: büyümen için | وَتَقْوَى: ve güçlenmen için'],
+      [178, 'kids', 'لَا تَأْكُلِ الْحَلْوَى قَبْلَ الْغَدَاءِ.', 'Lâ te’kulil-halvâ kablel-ğadâi.', 'Öğle yemeğinden önce tatlı/şeker yeme.', 'لَا تَأْكُلِ: yeme | الْحَلْوَى: tatlıyı/şekeri | قَبْلَ: önce | الْغَدَاءِ: öğle yemeğinden'],
+      [179, 'kids', 'أَمْسِكْ يَدِي عِنْدَ عُبُورِ الشَّارِعِ.', 'Emsik yedî inde ubûriş-şârii.', 'Caddeden karşıya geçerken elimi tut.', 'أَمْسِكْ: tut | يَدِي: elimi | عِنْدَ: esnasında | عُبُورِ: geçme | الشَّارِعِ: caddeyi'],
+      [180, 'kids', 'لَا تَتَكَلَّمْ مَعَ الْغُرَبَاءِ.', 'Lâ tetekellem meal-ğurabâi.', 'Yabancılarla konuşma.', 'لَا تَتَكَلَّمْ: konuşma | مَعَ: ile | الْغُرَبَاءِ: yabancılar'],
+      [181, 'kids', 'ضَعْ كُتُبَكَ فِي الْحَقِيبَةِ مُنْذُ الْمَسَاءِ.', 'Da’ kutubeke fil-hakîbeti munzul-mesâi.', 'Kitaplarını akşamdan çantaya koy.', 'ضَعْ: koy | كُتُبَكَ: kitaplarını | فِي الْحَقِيبَةِ: çantaya | مُنْذُ الْمَسَاءِ: akşamdan itibaren'],
+      [182, 'kids', 'مَاذَا تُرِيدُ أَنْ تَكُونَ فِي الْمُسْتَقْبَلِ؟', 'Mâzâ turîdu en tekûne fil-mustakbeli?', 'Gelecekte ne olmak istiyorsun?', 'مَاذَا: ne | تُرِيدُ: istiyorsun | أَنْ تَكُونَ: olmayı | فِي الْمُسْتَقْبَلِ: gelecekte'],
+      [183, 'kids', 'أَنْتَ وَلَدٌ ذَكِيٌّ وَمُؤَدَّبٌ.', 'Ente veledun zekiyyun ve mueddebun.', 'Sen zeki ve terbiyeli bir çocuksun.', 'أَنْتَ: sen | وَلَدٌ: bir çocuksun | ذَكِيٌّ: zeki | وَمُؤَدَّبٌ: ve edepli/terbiyeli'],
+      [184, 'kids', 'قُلِ الصِّدْقَ دَائِمًا وَلَا تَكْذِبْ.', 'Kulis-sıdka dâimen ve lâ tekzib.', 'Her zaman doğruyu söyle ve yalan söyleme.', 'قُلِ: söyle | الصِّدْقَ: doğruyu | دَائِمًا: daima | وَلَا تَكْذِبْ: ve yalan söyleme'],
+      [185, 'kids', 'سَاعِدْ أُمَّكَ فِي حَمْلِ الْأَكْيَاسِ.', 'Sâid ummeke fî hamlil-ekyâsi.', 'Poşetleri taşımada annene yardım et.', 'سَاعِدْ: yardım et | أُمَّكَ: annene | فِي حَمْلِ: taşımada | الْأَكْيَاسِ: poşetleri'],
+      [186, 'kids', 'هَلْ تَوَضَّأْتَ لِلصَّلَاةِ؟', 'Hel tevadda’te lis-salâti?', 'Namaz için abdest aldın mı?', 'هَلْ: mi | تَوَضَّأْتَ: abdest aldın | لِلصَّلَاةِ: namaz için'],
+      [187, 'kids', 'تَعَالَ نُصَلِّ جَمَاعَةً فِي الْبَيْتِ.', 'Teâle nusalli cemâaten fil-beyti.', 'Gel evde cemaatle namaz kılalım.', 'تَعَالَ: gel | نُصَلِّ: namaz kılalım | جَمَاعَةً: cemaat olarak | فِي الْبَيْتِ: evde'],
+      [188, 'kids', 'خُذْ دَوَاءَكَ حَتَّى تَشْفَى بِسُرْعَةٍ.', 'Huz devâeke hattâ teşfâ bi-sur’atin.', 'Hızlıca iyileşmek için ilacını al.', 'خُذْ: al | دَوَاءَكَ: ilacını | حَتَّى: -mek için/kadar | تَشْفَى: iyileşmen | بِسُرْعَةٍ: hızla'],
+      [189, 'kids', 'أُحِبُّكَ كَثِيرًا يَا قُرَّةَ عَيْنِي.', 'Uhibbuke kesîran yâ kurrate aynî.', 'Seni çok seviyorum ey gözümün nuru.', 'أُحِبُّكَ: seni seviyorum | كَثِيرًا: çok | يَا قُرَّةَ عَيْنِي: ey gözümün nuru'],
+      [190, 'kids', 'بَارَكَ اللَّهُ فِيكَ وَحَفِظَكَ مِنْ كُلِّ سُوءٍ.', 'Bârakallâhu fîke ve hafızake min kulli sûin.', 'Allah seni mübarek kılsın ve her kötülükten korusun.', 'بَارَكَ اللَّهُ فِيكَ: Allah seni mübarek kılsın | وَحَفِظَكَ: ve seni korusun | مِنْ كُلِّ: her ...-den | سُوءٍ: kötülükten'],
+      [191, 'school', 'اِجْلِسْ فِي مَكَانِكَ يَا بُنَيَّ.', 'İclis fî mekânike yâ buneyye.', 'Yerine otur evladım.', 'اِجْلِسْ: otur | فِي مَكَانِكَ: kendi yerine | يَا بُنَيَّ: ey evladım'],
+      [192, 'school', 'تَعَالَ إِلَى السَّبُّورَةِ وَاكْتُبِ الْجُمْلَةَ.', 'Teâle iles-sebbûrati vektubil-cumlete.', 'Tahtaya gel ve cümleyi yaz.', 'تَعَالَ: gel | إِلَى السَّبُّورَةِ: tahtaya | وَاكْتُبِ: ve yaz | الْجُمْلَةَ: cümleyi'],
+      [193, 'school', 'اِمْسَحِ السَّبُّورَةَ مِنْ فَضْلِكَ.', 'İmsahis-sebbûrate min fadlike.', 'Lütfen tahtayı sil.', 'اِمْسَحِ: sil | السَّبُّورَةَ: yazı tahtasını | مِنْ فَضْلِكَ: lütfen'],
+      [194, 'school', 'كَرِّرُوا بَعْدِي بِصَوْتٍ وَاحِدٍ.', 'Kerrirû ba’dî bi-savtin vâhidin.', 'Benden sonra hep bir ağızdan tekrar edin.', 'كَرِّرُوا: tekrar edin | بَعْدِي: benden sonra | بِصَوْتٍ وَاحِدٍ: tek bir sesle'],
+      [195, 'school', 'مَا مَعْنَى هَذِهِ الْكَلِمَةِ بِالتُّرْكِيَّةِ؟', 'Mâ ma’nâ hâzihil-kelimeti bit-turkiyyeti?', 'Bu kelimenin Türkçedeki anlamı nedir?', 'مَا: nedir | مَعْنَى: anlamı | هَذِهِ الْكَلِمَةِ: bu kelimenin | بِالتُّرْكِيَّةِ: Türkçe ile'],
+      [196, 'school', 'ضَعْ هَذِهِ الْكَلِمَةَ فِي جُمْلَةٍ مُفِيدَةٍ.', 'Da’ hâzihil-kelimete fî cumletin mufîdetin.', 'Bu kelimeyi anlamlı bir cümle içinde kullan.', 'ضَعْ: koy/kullan | هَذِهِ الْكَلِمَةَ: bu kelimeyi | فِي جُمْلَةٍ: bir cümlede | مُفِيدَةٍ: faydalı/anlamlı'],
+      [197, 'school', 'مَا هُوَ جَمْعُ هَذِهِ الْكَلِمَةِ؟', 'Mâ huve cem’u hâzihil-kelimeti?', 'Bu kelimenin çoğulu nedir?', 'مَا هُوَ: nedir | جَمْعُ: çoğulu | هَذِهِ الْكَلِمَةِ: bu kelimenin'],
+      [198, 'school', 'مَا هُوَ مُضَادُّ هَذِهِ الْكَلِمَةِ؟', 'Mâ huve mudâddu hâzihil-kelimeti?', 'Bu kelimenin zıt anlamlısı nedir?', 'مَا هُوَ: nedir | مُضَادُّ: zıttı/karşıtı | هَذِهِ الْكَلِمَةِ: bu kelimenin'],
+      [199, 'school', 'أَجِبْ عَنِ الْأَسْئِلَةِ التَّالِيَةِ.', 'Ecib anil-es’iletit-tâliyeti.', 'Aşağıdaki soruları cevapla.', 'أَجِبْ: cevap ver | عَنِ الْأَسْئِلَةِ: sorulara | التَّالِيَةِ: gelen/aşağıdaki'],
+      [200, 'school', 'اِمْلَأِ الْفَرَاغَاتِ بِالْكَلِمَةِ الْمُنَاسِبَةِ.', 'İmle’il-ferâğâti bil-kelimetil-munâsibeti.', 'Boşlukları uygun kelimeyle doldur.', 'اِمْلَأِ: doldur | الْفَرَاغَاتِ: boşlukları | بِالْكَلِمَةِ: kelimeyle | الْمُنَاسِبَةِ: uygun'],
+      [201, 'school', 'لَا تَنْسَ كِتَابَةَ اسْمِكَ عَلَى الْوَرَقَةِ.', 'Lâ tense kitâbete ismike alel-verakati.', 'Kağıdın üzerine adını yazmayı unutma.', 'لَا تَنْسَ: unutma | كِتَابَةَ: yazmayı | اسْمِكَ: adını | عَلَى الْوَرَقَةِ: kağıdın üzerine'],
+      [202, 'school', 'بَقِيَتْ خَمْسُ دَقَائِقَ عَلَى نِهَايَةِ الِامْتِحَانِ.', 'Bakiyet hamsu dekâika alâ nihâyetil-imtihâni.', 'Sınavın bitmesine beş dakika kaldı.', 'بَقِيَتْ: kaldı | خَمْسُ دَقَائِقَ: beş dakika | عَلَى نِهَايَةِ: sonuna/bitimine | الِامْتِحَانِ: sınavın'],
+      [203, 'school', 'ضَعُوا الْأَقْلَامَ وَسَلِّمُوا الْأَوْرَاقَ.', 'Daû el-eklâme ve sellimû el-evrâka.', 'Kalemleri bırakın ve kağıtları teslim edin.', 'ضَعُوا: bırakın/koyun | الْأَقْلَامَ: kalemleri | وَسَلِّمُوا: ve teslim edin | الْأَوْرَاقَ: kağıtları'],
+      [204, 'school', 'لَا تَنْظُرْ إِلَى وَرَقَةِ زَمِيلِكَ.', 'Lâ tenzur ilâ verakati zemîlike.', 'Arkadaşının kağıdına bakma.', 'لَا تَنْظُرْ: bakma | إِلَى وَرَقَةِ: kağıdına | زَمِيلِكَ: sıra arkadaşının'],
+      [205, 'school', 'خَطُّكَ جَمِيلٌ وَوَاضِحٌ جِدًّا.', 'Hattuke cemîlun ve vâdıhun cidden.', 'Yazın çok güzel ve okunaklı.', 'خَطُّكَ: el yazın | جَمِيلٌ: güzeldir | وَوَاضِحٌ: ve açıktır/okunaklıdır | جِدًّا: çok'],
+      [206, 'school', 'عَلَيْكَ أَنْ تُحَسِّنَ خَطَّكَ قَلِيلًا.', 'Aleyke en tuhassine hattake kalîlen.', 'El yazını biraz güzelleştirmen gerekiyor.', 'عَلَيْكَ: senin üzerine/gerekir | أَنْ تُحَسِّنَ: güzelleştirmen | خَطَّكَ: yazını | قَلِيلًا: biraz'],
+      [207, 'school', 'لِمَاذَا تَأَخَّرْتَ عَنِ الدَّرْسِ الْيَوْمَ؟', 'Limâzâ teahharte anid-dersi el-yevme?', 'Bugün derse neden geç kaldın?', 'لِمَاذَا: niçin | تَأَخَّرْتَ: geç kaldın | عَنِ الدَّرْسِ: dersten/derse | الْيَوْمَ: bugün'],
+      [208, 'school', 'هَلْ يُمْكِنُنِي الذَّهَابُ إِلَى دَوْرَةِ الْمِيَاهِ؟', 'Hel yumkinunî ez-zehâbu ilâ devratil-miyâhi?', 'Lavaboya gidebilir miyim?', 'هَلْ يُمْكِنُنِي: yapabilir miyim | الذَّهَابُ: gitmek | إِلَى دَوْرَةِ الْمِيَاهِ: lavaboya/tuvalete'],
+      [209, 'school', 'تَفَضَّلْ، وَلَكِنْ لَا تَتَأَخَّرْ.', 'Tefaddal, ve lâkin lâ teteahhar.', 'Buyur (git), ama geç kalma.', 'تَفَضَّلْ: buyur | وَلَكِنْ: fakat | لَا تَتَأَخَّرْ: gecikme'],
+      [210, 'school', 'رَنَّ الْجَرَسُ، لِنَبْدَأِ الدَّرْسَ.', 'Rennel-cerasu, li-nebde’id-derse.', 'Zil çaldı, derse başlayalım.', 'رَنَّ: çaldı | الْجَرَسُ: zil | لِنَبْدَأِ: başlayalım | الدَّرْسَ: derse'],
+      [211, 'school', 'سَأُوَزِّعُ أَوْرَاقَ الْعَمَلِ الْآنَ.', 'Se-uvezzıu evrâkal-ameli el-âne.', 'Şimdi çalışma kağıtlarını dağıtacağım.', 'سَأُوَزِّعُ: dağıtacağım | أَوْرَاقَ الْعَمَلِ: çalışma kağıtlarını | الْآنَ: şimdi'],
+      [212, 'school', 'اِعْمَلُوا فِي مَجْمُوعَاتٍ ثُنَائِيَّةٍ.', 'İ’melû fî mecmûâtin sunâiyyetin.', 'İkili gruplar halinde çalışın.', 'اِعْمَلُوا: çalışın | فِي مَجْمُوعَاتٍ: gruplar halinde | ثُنَائِيَّةٍ: ikili'],
+      [213, 'school', 'مَنْ يُرِيدُ أَنْ يَقْرَأَ الْفِقْرَةَ الْأُولَى؟', 'Men yurîdu en yakrael-fıkratel-ûlâ?', 'İlk paragrafı kim okumak ister?', 'مَنْ: kim | يُرِيدُ: ister | أَنْ يَقْرَأَ: okumayı | الْفِقْرَةَ: paragrafı | الْأُولَى: birinci/ilk'],
+      [214, 'school', 'لَا تَخَفْ مِنَ الْخَطَأِ، نَحْنُ نَتَعَلَّمُ.', 'Lâ tehaf minel-hata’i, nahnu neteallemu.', 'Hata yapmaktan korkma, biz öğreniyoruz.', 'لَا تَخَفْ: korkma | مِنَ الْخَطَأِ: hatadan | نَحْنُ: biz | نَتَعَلَّمُ: öğreniyoruz'],
+      [215, 'school', 'مُسْتَوَاكَ تَحَسَّنَ كَثِيرًا هَذَا الشَّهْرَ.', 'Mustevâke tehassene kesîran hâzeş-şehra.', 'Seviyen bu ay çok gelişti.', 'مُسْتَوَاكَ: senin seviyen | تَحَسَّنَ: iyileşti/gelişti | كَثِيرًا: çok | هَذَا الشَّهْرَ: bu ay'],
+      [216, 'school', 'سَأَتَحَدَّثُ مَعَ وَلِيِّ أَمْرِكَ.', 'Se-etehaddesu mea veliyyi emrike.', 'Velinle (anne/babanla) konuşacağım.', 'سَأَتَحَدَّثُ: konuşacağım | مَعَ: ile | وَلِيِّ أَمْرِكَ: senin velin'],
+      [217, 'school', 'يَوْمُ اجْتِمَاعِ أَوْلِيَاءِ الْأُمُورِ هُوَ السَّبْتُ.', 'Yevmu ictimâi evliyâil-umûri huves-sebtu.', 'Veli toplantısı günü cumartesidir.', 'يَوْمُ اجْتِمَاعِ: toplantı günü | أَوْلِيَاءِ الْأُمُورِ: velilerin | هُوَ: o | السَّبْتُ: cumartesidir'],
+      [218, 'school', 'أَيْنَ مِلَفُّ الصَّفِّ التَّاسِعِ؟', 'Eyne mileffus-saffit-tâsii?', 'Dokuzuncu sınıfın dosyası nerede?', 'أَيْنَ: nerede | مِلَفُّ: dosyası | الصَّفِّ: sınıfın | التَّاسِعِ: dokuzuncu'],
+      [219, 'school', 'آلَةُ الطِّبَاعَةِ لَا تَعْمَلُ فِي غُرْفَةِ الْمُعَلِّمِينَ.', 'Âletut-tıbâati lâ ta’melu fî ğurfetil-muallimîne.', 'Öğretmenler odasında yazıcı (fotokopi) çalışmıyor.', 'آلَةُ الطِّبَاعَةِ: yazıcı | لَا تَعْمَلُ: çalışmıyor | فِي غُرْفَةِ الْمُعَلِّمِينَ: öğretmenler odasında'],
+      [220, 'school', 'عِنْدِي حِصَّةٌ فَارِغَةٌ بَعْدَ الظُّهْرِ.', 'İndî hissatun fâriğatun ba’dez-zuhri.', 'Öğleden sonra boş bir dersim var.', 'عِنْدِي: benim var | حِصَّةٌ: bir ders | فَارِغَةٌ: boş | بَعْدَ الظُّهْرِ: öğleden sonra'],
+      [221, 'school', 'مَتَى تَبْدَأُ الْعُطْلَةُ الصَّيْفِيَّةُ؟', 'Metâ tebdeul-utletus-sayfiyyetu?', 'Yaz tatili ne zaman başlıyor?', 'مَتَى: ne zaman | تَبْدَأُ: başlıyor | الْعُطْلَةُ: tatil | الصَّيْفِيَّةُ: yaz (yazlık)'],
+      [222, 'school', 'نَتَمَنَّى لَكُمْ عُطْلَةً سَعِيدَةً وَمُفِيدَةً.', 'Netemennâ lekum utleten saîdeten ve mufîdeten.', 'Size mutlu ve verimli bir tatil dileriz.', 'نَتَمَنَّى: dileriz | لَكُمْ: sizin için | عُطْلَةً: bir tatil | سَعِيدَةً: mutlu | وَمُفِيدَةً: ve faydalı'],
+      [223, 'school', 'اِحْتَرِمْ مُعَلِّمِيكَ وَزُمَلَاءَكَ.', 'İhterim muallimîke ve zumelâeke.', 'Öğretmenlerine ve arkadaşlarına saygı göster.', 'اِحْتَرِمْ: saygı göster | مُعَلِّمِيكَ: öğretmenlerine | وَزُمَلَاءَكَ: ve arkadaşlarına'],
+      [224, 'school', 'الْعِلْمُ نُورٌ وَالْجَهْلُ ظَلَامٌ.', 'El-ilmu nûrun vel-cehlu zalâmun.', 'İlim nurdur, cehalet karanlıktır.', 'الْعِلْمُ: ilim | نُورٌ: ışıktır/nurdur | وَالْجَهْلُ: ve cehalet | ظَلَامٌ: karanlıktır'],
+      [225, 'school', 'مَنْ جَدَّ وَجَدَ، وَمَنْ زَرَعَ حَصَدَ.', 'Men cedde vecede, ve men zeraa hasade.', 'Çalışan kazanır (bulan olur), eken biçer.', 'مَنْ: kim | جَدَّ: çabaladı/çalıştı | وَجَدَ: buldu | وَمَنْ زَرَعَ: ve kim ektiyse | حَصَدَ: biçti'],
+      [226, 'social', 'جُزِيتَ خَيْرًا عَلَى مُسَاعَدَتِكَ.', 'Cuzîte hayran alâ musâadetike.', 'Yardımın için Allah seni hayırla mükafatlandırsın.', 'جُزِيتَ: mükafatlandırıldın | خَيْرًا: hayırla | عَلَى: üzerine/için | مُسَاعَدَتِكَ: yardımın'],
+      [227, 'social', 'عَلَى الرَّحْبِ وَالسَّعَةِ، هَذَا وَاجِبِي.', 'Aler-rahbi ves-seati, hâzâ vâcibî.', 'Rica ederim (baş üstüne), bu benim görevim.', 'عَلَى الرَّحْبِ وَالسَّعَةِ: rica ederim/memnuniyetle | هَذَا: bu | وَاجِبِي: görevimdir'],
+      [228, 'social', 'أَسْتَأْذِنُكَ الْآنَ، يَجِبُ أَنْ أَنْصَرِفَ.', 'Este’zinuke el-âne, yecibu en ensarife.', 'Şimdi müsaadeni istiyorum, ayrılmam gerekiyor.', 'أَسْتَأْذِنُكَ: senden izin istiyorum | الْآنَ: şimdi | يَجِبُ: gerekir | أَنْ أَنْصَرِفَ: ayrılmam'],
+      [229, 'social', 'تَوَكَّلْنَا عَلَى اللَّهِ، لِنَنْطَلِقْ.', 'Tevekkelnâ alallâhi, li-nentalik.', 'Allah’a tevekkül ettik, hadi yola çıkalım.', 'تَوَكَّلْنَا: tevekkül ettik | عَلَى اللَّهِ: Allah’a | لِنَنْطَلِقْ: yola koyulalım'],
+      [230, 'social', 'الْمُرُورُ مُزْدَحِمٌ جِدًّا فِي هَذِهِ السَّاعَةِ.', 'El-murûru muzdahimun cidden fî hâzihis-sâati.', 'Bu saatte trafik çok yoğun.', 'الْمُرُورُ: trafik | مُزْدَحِمٌ: kalabalıktır/yoğundur | جِدًّا: çok | فِي هَذِهِ السَّاعَةِ: bu saatte'],
+      [231, 'social', 'أُرِيدُ تَعْبِئَةَ الْوَقُودِ بِالْكَامِلِ.', 'Urîdu ta’bietel-vekûdi bil-kâmili.', 'Depoyu tamamen doldurmak (yakıt almak) istiyorum.', 'أُرِيدُ: istiyorum | تَعْبِئَةَ: doldurmayı | الْوَقُودِ: yakıtı | بِالْكَامِلِ: tamamen'],
+      [232, 'social', 'حَجَزْتُ مَوْعِدًا عِنْدَ الطَّبِيبِ.', 'Haceztu mev’iden indet-tabîbi.', 'Doktordan randevu aldım.', 'حَجَزْتُ: ayırttım/aldım | مَوْعِدًا: bir randevu | عِنْدَ: yanında/-dan | الطَّبِيبِ: doktorun'],
+      [233, 'social', 'أَيْنَ أَقْرَبُ صَيْدَلِيَّةٍ مَفْتُوحَةٍ؟', 'Eyne akrabu saydeliyyetin meftûhatin?', 'En yakın açık eczane nerede?', 'أَيْنَ: nerede | أَقْرَبُ: en yakın | صَيْدَلِيَّةٍ: eczane | مَفْتُوحَةٍ: açık'],
+      [234, 'social', 'الْفَاتُورَةُ مِنْ فَضْلِكَ يَا أَخِي.', 'El-fâtûratu min fadlike yâ ahî.', 'Hesap (fatura) lütfen kardeşim.', 'الْفَاتُورَةُ: hesap/fatura | مِنْ فَضْلِكَ: lütfen | يَا أَخِي: ey kardeşim'],
+      [235, 'social', 'اِحْتَفِظْ بِالْبَاقِي لِنَفْسِكَ.', 'İhtefız bil-bâkî li-nefsike.', 'Üstü (para üstü) kalsın.', 'اِحْتَفِظْ: sakla/tut | بِالْبَاقِي: kalanı (para üstünü) | لِنَفْسِكَ: kendin için'],
+      [236, 'social', 'هَلْ يُوجَدُ مَقَاسٌ أَكْبَرُ مِنْ هَذَا؟', 'Hel yûcedu mekâsun ekberu min hâzâ?', 'Bunun daha büyük bedeni var mı?', 'هَلْ يُوجَدُ: var mı | مَقَاسٌ: beden/ölçü | أَكْبَرُ: daha büyük | مِنْ هَذَا: bundan'],
+      [237, 'social', 'السِّعْرُ غَالٍ قَلِيلًا، هَلْ هُنَاكَ تَخْفِيضٌ؟', 'Es-si’ru ğâlin kalîlen, hel hunâke tahfîdun?', 'Fiyat biraz pahalı, indirim var mı?', 'السِّعْرُ: fiyat | غَالٍ: pahalıdır | قَلِيلًا: biraz | هَلْ هُنَاكَ: var mı | تَخْفِيضٌ: indirim'],
+      [238, 'social', 'مَتَى يُؤَذِّنُ أَذَانُ الْعِشَاءِ؟', 'Metâ yuezzinu ezânul-işâi?', 'Yatsı ezanı ne zaman okunuyor?', 'مَتَى: ne zaman | يُؤَذِّنُ: okunur | أَذَانُ: ezanı | الْعِشَاءِ: yatsının'],
+      [239, 'social', 'تَقَبَّلَ اللَّهُ طَاعَتَكُمْ، جُمُعَةٌ مُبَارَكَةٌ.', 'Tekabbelallâhu tâatekum, cum’atun mubâraketun.', 'Allah ibadetlerinizi kabul etsin, hayırlı cumalar.', 'تَقَبَّلَ اللَّهُ: Allah kabul etsin | طَاعَتَكُمْ: itaatinizi/ibadetinizi | جُمُعَةٌ مُبَارَكَةٌ: mübarek cuma'],
+      [240, 'social', 'كُلُّ عَامٍ وَأَنْتُمْ بِخَيْرٍ، عِيدٌ مُبَارَكٌ.', 'Kullu âmin ve entum bi-hayrin, îdun mubârakun.', 'Her yılınız hayırla geçsin, bayramınız mübarek olsun.', 'كُلُّ عَامٍ: her yıl | وَأَنْتُمْ بِخَيْرٍ: siz hayır içinde olun | عِيدٌ مُبَارَكٌ: bayram mübarek'],
+      [241, 'social', 'مُبَارَكٌ النَّجَاحُ، أَتَمَنَّى لَكَ التَّوْفِيقَ.', 'Mubârakun en-necâhu, etemennâ leket-tevfîka.', 'Başarın mübarek olsun, sana muvaffakiyet dilerim.', 'مُبَارَكٌ: kutlu/mübarek olsun | النَّجَاحُ: başarı | أَتَمَنَّى لَكَ: sana dilerim | التَّوْفِيقَ: başarı/muvaffakiyet'],
+      [242, 'social', 'الْبَقَاءُ لِلَّهِ، عَظَّمَ اللَّهُ أَجْرَكُمْ.', 'El-bekâu lillâhi, azzamallâhu ecrakum.', 'Beka Allah’ındır, başınız sağ olsun.', 'الْبَقَاءُ لِلَّهِ: kalıcılık Allah’ındır | عَظَّمَ اللَّهُ: Allah büyütsün | أَجْرَكُمْ: mükafatınızı/ecrinizi'],
+      [243, 'social', 'حَمْدًا لِلَّهِ عَلَى سَلَامَتِكَ.', 'Hamden lillâhi alâ selâmetike.', 'Sağ salim kavuştuğuna şükürler olsun (Geçmiş olsun).', 'حَمْدًا لِلَّهِ: Allah’a hamdolsun | عَلَى سَلَامَتِكَ: senin selametine'],
+      [244, 'social', 'سَفَرًا سَعِيدًا وَعَوْدًا حَمِيدًا.', 'Seferan saîden ve avden hamîden.', 'Hayırlı yolculuklar, sağ salim gidip dönün.', 'سَفَرًا سَعِيدًا: mutlu yolculuk | وَعَوْدًا: ve dönüş | حَمِيدًا: övülmüş/güzel'],
+      [245, 'social', 'تَكَلَّمْ بِبُطْءٍ مِنْ فَضْلِكَ لِأَفْهَمَكَ.', 'Tekellem bi-but’in min fadlike li-efhemeke.', 'Seni anlamam için lütfen yavaş konuş.', 'تَكَلَّمْ: konuş | بِبُطْءٍ: yavaşça | مِنْ فَضْلِكَ: lütfen | لِأَفْهَمَكَ: seni anlamam için'],
+      [246, 'social', 'أَنَا أَتَعَلَّمُ اللُّغَةَ الْعَرَبِيَّةَ مُنْذُ سَنَةٍ.', 'Ene eteallemul-luğatel-arabiyyete munzu senetin.', 'Bir yıldır Arapça öğreniyorum.', 'أَنَا أَتَعَلَّمُ: ben öğreniyorum | اللُّغَةَ الْعَرَبِيَّةَ: Arap dilini | مُنْذُ سَنَةٍ: bir yıldan beri'],
+      [247, 'social', 'أُرِيدُ أَنْ أُمَارِسَ الْمُحَادَثَةَ مَعَكَ.', 'Urîdu en umârisel-muhâdesete meake.', 'Seninle konuşma pratiği yapmak istiyorum.', 'أُرِيدُ: istiyorum | أَنْ أُمَارِسَ: pratik yapmayı | الْمُحَادَثَةَ: karşılıklı konuşmayı | مَعَكَ: seninle'],
+      [248, 'social', 'صَحِّحْ لِي إِذَا أَخْطَأْتُ فِي الْكَلَامِ.', 'Sahhih lî izâ ahta’tu fil-kelâmi.', 'Konuşmada hata yaparsam beni düzelt.', 'صَحِّحْ لِي: benim için düzelt | إِذَا: eğer/-dığında | أَخْطَأْتُ: hata yaptım | فِي الْكَلَامِ: konuşmada'],
+      [249, 'social', 'بَلِّغْ سَلَامِي إِلَى جَمِيعِ الْعَائِلَةِ.', 'Belliğ selâmî ilâ cemîil-âileti.', 'Tüm aileye selamımı ilet.', 'بَلِّغْ: ulaştır/ilet | سَلَامِي: selamımı | إِلَى جَمِيعِ: tamamına | الْعَائِلَةِ: ailenin'],
+      [250, 'social', 'أَسْتَوْدِعُكُمُ اللَّهَ الَّذِي لَا تَضِيعُ وَدَائِعُهُ.', 'Estevdiukumullâhellezî lâ tadîu vedâiuhu.', 'Sizi, emanetleri zayi olmayan Allah’a emanet ediyorum.', 'أَسْتَوْدِعُكُمُ اللَّهَ: sizi Allah’a emanet ederim | الَّذِي: o ki | لَا تَضِيعُ: kaybolmaz/zayi olmaz | وَدَائِعُهُ: O’nun emanetleri']
+    ];
+
+    const BREAKDOWNS_1_100 = {
+      1: 'أُرِيدُ: istiyorum | أَنْ: -mek/-mak | ...: (fiil)',
+      2: 'لَا: değil/hayır | أُرِيدُ: istiyorum | أَنْ: -mek/-mak',
+      3: 'يَجِبُ: gerekir | عَلَيَّ: benim üzerime | أَنْ: -mem/-mam',
+      4: 'يَجِبُ: gerekir | عَلَيْكَ: senin üzerine | أَنْ: -men/-man',
+      5: 'هَلْ: mı/mi | يُمْكِنُكَ: senin için mümkün mü (-ebilir misin) | أَنْ: -mek',
+      6: 'أَحْتَاجُ: ihtiyacım var | إِلَى: -e/-a | ...: (isim)',
+      7: 'أَنَا: ben | ذَاهِبٌ: gidenim/gidiyorum | إِلَى: -e/-a',
+      8: 'لَيْسَ: yoktur | عِنْدِي: yanımda/bende | وَقْتٌ: vakit | لِـ: için',
+      9: 'مِنْ فَضْلِكَ: lütfundan (lütfen) | أَعْطِنِي: bana ver | ...: (nesne)',
+      10: 'أَيْنَ: nereye/nerede | وَضَعْتَ: koydun | ...: (nesne)',
+      11: 'أَبْحَثُ: arıyorum | عَنْ: -i / hakkında | ...: (nesne)',
+      12: 'نَسِيتُ: unuttum | أَنْ: -meyi/-mayı | ...: (fiil)',
+      13: 'سَأَفْعَلُ: yapacağım | هَذَا: bunu | بَعْدَ: -den sonra',
+      14: 'مَاذَا: ne | تَفْعَلُ: yapıyorsun | فِي: içinde/-de',
+      15: 'لِمَاذَا: niçin/neden | لَمْ: -medi/-madı (geçmiş olumsuzluk)',
+      16: 'مَتَى: ne zaman | سَنَذْهَبُ: gideceğiz | إِلَى: -e/-a',
+      17: 'أُفَضِّلُ: tercih ederim | ...: (1. şey) | عَلَى: üzerine (-e karşı)',
+      18: 'مِنَ الْمُمْكِنِ: mümkündür | أَنْ: -mesi/-ması',
+      19: 'أَظُنُّ: sanıyorum/zannediyorum | أَنَّ: ki',
+      20: 'لَا أَسْتَطِيعُ: gücüm yetmez/yapamam | أَنْ: -meyi | الْآنَ: şimdi',
+      21: 'مَاذَا: ne | سَنَطْبُخُ: pişireceğiz | الْيَوْمَ: bugün',
+      22: 'الطَّعَامُ: yemek | جَاهِزٌ: hazırdır | تَعَالَوْا: gelin | إِلَى الْمَائِدَةِ: sofraya',
+      23: 'هَلْ: mı | نَحْتَاجُ: ihtiyacımız var | إِلَى شَيْءٍ: bir şeye | مِنَ السُّوقِ: marketten',
+      24: 'سَأَعُودُ: döneceğim | إِلَى الْبَيْتِ: eve | فِي السَّاعَةِ: saat ...-de',
+      25: 'أَنَا: ben | مُتْعَبٌ: yorgunum | جِدًّا: çok | الْيَوْمَ: bugün',
+      26: 'هَلْ: mi | شَرِبْتِ: içtin (sen-kadın) | الْقَهْوَةَ: kahveyi',
+      27: 'دَعِينَا: hadi gel | نَشْرَبِ: içelim | الشَّايَ: çayı | مَعًا: birlikte',
+      28: 'مَنْ: kim | سَيَأْخُذُ: alacak | الْأَوْلَادَ: çocukları | مِنَ الْمَدْرَسَةِ: okuldan',
+      29: 'هَلْ: mi | دَفَعْتَ: ödedin | فَاتُورَةَ: faturasını | ...: (isim)',
+      30: 'الْبَيْتُ: ev | يَحْتَاجُ: ihtiyaç duyuyor | إِلَى تَنْظِيفٍ: temizliğe',
+      31: 'سَأُصَلِّي: namaz kılacağım | ثُمَّ: sonra | آتِي: gelirim',
+      32: 'جَزَاكِ اللَّهُ: Allah seni mükafatlandırsın | خَيْرًا: hayırla | سَلِمَتْ: sağ olsun | يَدَاكِ: iki elin',
+      33: 'مَا: nedir | رَأْيُكِ: senin görüşün/fikrin | فِي: hakkında',
+      34: 'سَنَزُورُ: ziyaret edeceğiz | عَائِلَتِي: ailemi | هَذَا الْأُسْبُوعَ: bu hafta',
+      35: 'لَا تَنْسَيْ: unutma | أَنْ تُوقِظِينِي: beni uyandırmayı | فِي السَّاعَةِ: saat ...-de',
+      36: 'الْجَوُّ: hava | بَارِدٌ: soğuktur | أَغْلِقِ: kapat | النَّافِذَةَ: pencereyi',
+      37: 'أَيْنَ: nerede | مِفْتَاحُ: anahtarı | السَّيَّارَةِ: arabanın',
+      38: 'سَأَخْرُجُ: çıkacağım | قَلِيلًا: biraz | وَأَعُودُ: ve döneceğim',
+      39: 'هَلْ: mı | كُلُّ شَيْءٍ: her şey | عَلَى مَا يُرَامُ: yolunda',
+      40: 'تُصْبِحُونَ: sabaha çıkın | عَلَى خَيْرٍ: hayır üzerine (İyi geceler)',
+      41: 'هَيَّا: hadi | اسْتَيْقِظْ: uyan | حَانَ: geldi | وَقْتُ الْمَدْرَسَةِ: okul vakti',
+      42: 'هَلْ: mi | أَكْمَلْتَ: bitirdin | وَاجِبَكَ: ödevini | الْمَنْزِلِيَّ: ev',
+      43: 'اِغْسِلْ: yıka | يَدَيْكَ: iki elini | قَبْلَ: önce | الْأَكْلِ: yemekten',
+      44: 'نَظِّفْ: fırçala | أَسْنَانَكَ: dişlerini | قَبْلَ النَّوْمِ: uykudan önce',
+      45: 'اِلْبَسْ: giy | مَلَابِسَكَ: elbiselerini | بِسُرْعَةٍ: hızla',
+      46: 'لَا تَلْعَبْ: oynama | بِالْهَاتِفِ: telefonla | كَثِيرًا: çok',
+      47: 'رَتِّبْ: topla | غُرْفَتَكَ: odanı | مِنْ فَضْلِكَ: lütfen',
+      48: 'مَاذَا: ne | فَعَلْتَ: yaptın | فِي الْمَدْرَسَةِ: okulda | الْيَوْمَ: bugün',
+      49: 'كُلْ: ye | طَعَامَكَ: yemeğini | كُلَّهُ: tamamını/hepsini',
+      50: 'حَانَ: geldi | وَقْتُ النَّوْمِ: uyku vakti | اِذْهَبْ: git | إِلَى فِرَاشِكَ: yatağına',
+      51: 'لَا تَتَشَاجَرْ: kavga etme | مَعَ: ile | أَخِيكَ: erkek kardeşin | أُخْتِكَ: kız kardeşin',
+      52: 'أَنَا: ben | فَخُورٌ: gururluyum | بِكَ: seninle | جِدًّا: çok',
+      53: 'اِسْمَعْ: dinle | كَلَامَ: sözünü | أُمِّكَ: annenin',
+      54: 'إِذَا: eğer | أَكْمَلْتَ: bitirdin | دَرْسَكَ: dersini | سَنَذْهَبُ: gideceğiz | إِلَى الْحَدِيقَةِ: parka',
+      55: 'كُنْ: ol | حَذِرًا: dikkatli | لَا تَرْكُضْ: koşma | هُنَا: burada',
+      56: 'هَلْ: mı | يُؤْلِمُكَ: ağrıtıyor | شَيْءٌ: bir şey',
+      57: 'أَحْضِرْ: getir | حَقِيبَتَكَ: çantanı | وَتَعَالَ: ve gel',
+      58: 'أَحْسَنْتَ: aferin | يَا بُنَيَّ: ey yavrum | عَمَلٌ: iş | رَائِعٌ: harika',
+      59: 'لَا تَبْكِ: ağlama | أَنَا: ben | هُنَا: burada | مَعَكَ: seninleyim',
+      60: 'سَأَحْكِي: anlatacağım | لَكَ: sana | قِصَّةً: bir hikaye | قَبْلَ النَّوْمِ: uykudan önce',
+      61: 'السَّلَامُ عَلَيْكُمْ: selam üzerinize olsun | يَا طُلَّابُ: ey öğrenciler | كَيْفَ حَالُكُمُ: haliniz nasıl | الْيَوْمَ: bugün',
+      62: 'اِفْتَحُوا: açınız | كُتُبَكُمْ: kitaplarınızı | عَلَى الصَّفْحَةِ: ... sayfasından',
+      63: 'اِنْتَبِهُوا: dikkat edin | إِلَيَّ: bana | وَاسْتَمِعُوا: ve dinleyin | جَيِّدًا: iyice',
+      64: 'مَنْ: kim | يَعْرِفُ: biliyor | الْجَوَابَ: cevabı | الصَّحِيحَ: doğru',
+      65: 'اِرْفَعْ: kaldır | يَدَكَ: elini (parmağını) | قَبْلَ أَنْ: -meden önce | تَتَكَلَّمَ: konuşman',
+      66: 'اُكْتُبُوا: yazınız | هَذَا: bunu | عَلَى الدَّفْتَرِ: defterin üzerine',
+      67: 'هَلْ فَهِمْتُمُ: anladınız mı | الدَّرْسَ: dersi | أَمْ: yoksa | أُعِيدُ: tekrar edeyim mi | مَرَّةً أُخْرَى: bir kez daha',
+      68: 'هَلْ هُنَاكَ: var mı | أَيُّ: herhangi bir | سُؤَالٍ: soru',
+      69: 'مَنْ هُوَ: kimdir | الْغَائِبُ: devamsız/yok | الْيَوْمَ: bugün',
+      70: 'هُدُوءً: sessizlik | مِنْ فَضْلِكُمْ: lütfen | لَا تَتَكَلَّمُوا: konuşmayınız',
+      71: 'مَوْضُوعُنَا: konumuz | الْيَوْمَ: bugün | هُوَ: odur ki ...',
+      72: 'اِقْرَأِ: oku | النَّصَّ: metni | بِصَوْتٍ: bir sesle | مُرْتَفِعٍ: yüksek',
+      73: 'الِامْتِحَانُ: sınav | سَيَكُونُ: olacaktır | فِي الْأُسْبُوعِ: haftada | الْقَادِمِ: gelecek',
+      74: 'إِجَابَتُكَ: cevabın | صَحِيحَةٌ: doğrudur | بَارَكَ اللَّهُ فِيكَ: Allah seni mübarek kılsın',
+      75: 'إِجَابَتُكَ: cevabın | قَرِيبَةٌ: yakındır | حَاوِلْ: dene | مَرَّةً أُخْرَى: bir kez daha',
+      76: 'لَا تَنْسَوْا: unutmayınız | أَنْ تُحْضِرُوا: getirmenizi | ...: (nesne) | غَدًا: yarın',
+      77: 'عِنْدِي: benim var | حِصَّةٌ: bir dersim | فِي الصَّفِّ: ... sınıfta | الْآنَ: şimdi',
+      78: 'سَأُحَضِّرُ: hazırlayacağım | أَسْئِلَةَ: sorularını | الِامْتِحَانِ: sınavın | الْيَوْمَ: bugün',
+      79: 'يَجِبُ: gerekir | أَنْ أُدْخِلَ: girmem | الدَّرَجَاتِ: notları | فِي النِّظَامِ: sisteme',
+      80: 'لَدَيْنَا: bizim var | اجْتِمَاعٌ: bir toplantımız | مَعَ الْمُدِيرِ: müdürle | وَالْمُعَلِّمِينَ: ve öğretmenlerle',
+      81: 'مَا هِيَ: nedir | حِصَّتُكَ: senin dersin | التَّالِيَةُ: sonraki',
+      82: 'انْتَهَى: bitti | الدَّرْسُ: ders | يُمْكِنُكُمُ: sizin için mümkündür | الْخُرُوجُ: çıkmak | إِلَى الِاسْتِرَاحَةِ: teneffüse',
+      83: 'رَاجِعُوا: tekrar edin | هَذَا الْمَوْضُوعَ: bu konuyu | فِي الْبَيْتِ: evde',
+      84: 'أَغْلِقُوا: kapatınız | الْكُتُبَ: kitapları | وَاسْتَعِدُّوا: ve hazırlanınız | لِلِاخْتِبَارِ: teste',
+      85: 'أَنَا: ben | الْمُعَلِّمُ: öğretmenim | الْمُنَاوِبُ: nöbetçi | الْيَوْمَ: bugün',
+      86: 'كَمِ: kaçtır | السَّاعَةُ: saat | الْآنَ: şu an',
+      87: 'تَأَخَّرْنَا: geç kaldık | يَجِبُ: gerekir | أَنْ نُسْرِعَ: acele etmemiz',
+      88: 'بِكَمْ: kaça | هَذَا: bu | مِنْ فَضْلِكَ: lütfen',
+      89: 'أُرِيدُ: istiyorum | أَنْ أَشْتَرِيَ: satın almayı | كِيلُو مِنْ: ...-den bir kilo',
+      90: 'هَلْ يُمْكِنُ: mümkün müdür | الدَّفْعُ: ödeme yapmak | بِالْبِطَاقَةِ: kart ile',
+      91: 'فِي الْيَوْمِ التَّالِي: ertesi günde | فِي الْأُسْبُوعِ الْمَاضِي: geçen haftada',
+      92: 'سَأَتَّصِلُ: arayacağım | بِكَ: seni | بَعْدَ قَلِيلٍ: birazdan',
+      93: 'أَنَا مَشْغُولٌ: meşgulüm | الْآنَ: şu an | نَتَكَلَّمُ: konuşuruz | لَاحِقًا: daha sonra',
+      94: 'إِنْ شَاءَ اللَّهُ: Allah dilerse | نَلْتَقِي: görüşürüz | غَدًا: yarın',
+      95: 'عَفْوًا: affedersiniz | لَمْ أَفْهَمْ: anlamadım | مَا: ne | قُلْتَ: söyledin',
+      96: 'كَيْفَ: nasıl | يُمْكِنُنِي: yapabilirim | الذَّهَابُ: gitmek | إِلَى: -e/-a',
+      97: 'الْحَمْدُ لِلَّهِ: hamd Allah’adır | عَلَى: üzerine | كُلِّ حَالٍ: her hal',
+      98: 'تَقَبَّلَ اللَّهُ: Allah kabul etsin | مِنَّا: bizden | وَمِنْكُمْ: ve sizden',
+      99: 'شَفَاكَ اللَّهُ: Allah sana şifa versin | وَعَافَاكَ: ve afiyet versin',
+      100: 'فِي أَمَانِ اللَّهِ: Allah’a emanet | مَعَ السَّلَامَةِ: selametle'
+    };
+
+    const parseBreakdownString = (str) => {
+      if (!str) return [];
+      return str.split('|').map((part) => {
+        const [w, ...mParts] = part.trim().split(':');
+        return { w: (w || '').trim(), m: mParts.join(':').trim() };
+      });
+    };
+
+    const INITIAL_PATTERNS = [
+      ...BASE_100_PATTERNS.map((p) => ({ ...p, words: parseBreakdownString(BREAKDOWNS_1_100[p.id]) })),
+      ...EXTRA_150_RAW.map(([id, category, ar, trPron, tr, breakdownStr]) => ({
+        id, category, ar, trPron, tr,
+        hasSlot: ar.includes('...'),
+        slotType: ar.includes('أَنْ ...') ? 'verb_en' : ar.includes('إِلَى ...') ? 'place' : 'noun',
+        words: parseBreakdownString(breakdownStr)
+      }))
+    ];
+
+    const INITIAL_VOCABULARY = [
+      { id: 'v1', ar: 'أَشْرَبَ الشَّايَ', trPron: 'eşrabeş-şâye', tr: 'çay içmek (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ش-ر-ب' },
+      { id: 'v2', ar: 'أَشْرَبَ الْقَهْوَةَ', trPron: 'eşrabel-kahvete', tr: 'kahve içmek (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ش-ر-ب' },
+      { id: 'v3', ar: 'أَذْهَبَ إِلَى الْمَدْرَسَةِ', trPron: 'ezhebe ilel-medreseti', tr: 'okula gitmek (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ذ-ه-ب' },
+      { id: 'v4', ar: 'أَذْهَبَ إِلَى السُّوقِ', trPron: 'ezhebe iles-sûki', tr: 'markete gitmek (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ذ-ه-ب' },
+      { id: 'v5', ar: 'أَسْتَرِيحَ قَلِيلًا', trPron: 'esterîha kalîlen', tr: 'biraz dinlenmek (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ر-و-ح' },
+      { id: 'v6', ar: 'أُحَضِّرَ الدَّرْسَ', trPron: 'uhaddıred-derse', tr: 'dersi hazırlamak (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ح-ض-ر' },
+      { id: 'v7', ar: 'أَقْرَأَ الْكِتَابَ', trPron: 'ekrael-kitâbe', tr: 'kitap okumak (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ق-ر-أ' },
+      { id: 'v8', ar: 'أَنَامَ مُبَكِّرًا', trPron: 'enâme mubekkiran', tr: 'erken uyumak (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ن-و-م' },
+      { id: 'v9', ar: 'أَتَكَلَّمَ مَعَكَ', trPron: 'etekelleme meake', tr: 'seninle konuşmak (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ك-ل-م' },
+      { id: 'v10', ar: 'أُصَلِّيَ الْعَصْرَ', trPron: 'usalliyel-asra', tr: 'ikindi namazını kılmak (ben)', type: 'verb_en', cat: 'Fiiller (Ben)', root: 'ص-ل-و' },
+      { id: 'vy1', ar: 'تُسَاعِدَنِي', trPron: 'tusâidenî', tr: 'bana yardım etmen', type: 'verb_en_you', cat: 'Fiiller (Sen)', root: 'س-ع-د' },
+      { id: 'vy2', ar: 'تَدْرُسَ جَيِّدًا', trPron: 'tedruse ceyyiden', tr: 'iyi ders çalışman', type: 'verb_en_you', cat: 'Fiiller (Sen)', root: 'د-ر-س' },
+      { id: 'vy3', ar: 'تَفْتَحَ الْبَابَ', trPron: 'teftahal-bâbe', tr: 'kapıyı açman', type: 'verb_en_you', cat: 'Fiiller (Sen)', root: 'ف-ت-ح' },
+      { id: 'vy4', ar: 'تَنْتَظِرَ قَلِيلًا', trPron: 'tentazıra kalîlen', tr: 'biraz beklemen', type: 'verb_en_you', cat: 'Fiiller (Sen)', root: 'ن-ظ-ر' },
+      { id: 'p1', ar: 'الْمَدْرَسَةِ', trPron: 'el-medreseti', tr: 'okul / okula', type: 'place', cat: 'Mekan & Okul', root: 'د-ر-س' },
+      { id: 'p2', ar: 'الْبَيْتِ', trPron: 'el-beyti', tr: 'ev / eve', type: 'place', cat: 'Ev & Aile', root: 'ب-ي-ت' },
+      { id: 'p3', ar: 'الْمَسْجِدِ', trPron: 'el-mescidi', tr: 'cami / camiye', type: 'place', cat: 'Günlük Hayat', root: 'س-ج-د' },
+      { id: 'p4', ar: 'السُّوقِ', trPron: 'es-sûki', tr: 'çarşı / market', type: 'place', cat: 'Günlük Hayat', root: 'س-و-ق' },
+      { id: 'p5', ar: 'الْحَدِيقَةِ', trPron: 'el-hadîkati', tr: 'park / bahçe', type: 'place', cat: 'Çocuk & Ebeveyn', root: 'ح-د-ق' },
+      { id: 'n1', ar: 'الْكِتَابَ', trPron: 'el-kitâbe', tr: 'kitap', type: 'noun', cat: 'Mekan & Okul', root: 'ك-ت-ب' },
+      { id: 'n2', ar: 'الدَّفْتَرَ', trPron: 'ed-deftere', tr: 'defter', type: 'noun', cat: 'Mekan & Okul', root: 'د-ف-ت-ر' },
+      { id: 'n3', ar: 'الْقَلَمَ', trPron: 'el-kaleme', tr: 'kalem', type: 'noun', cat: 'Mekan & Okul', root: 'ق-ل-م' },
+      { id: 'n4', ar: 'الِامْتِحَانَ', trPron: 'el-imtihâne', tr: 'sınav', type: 'noun', cat: 'Mekan & Okul', root: 'م-ح-ن' },
+      { id: 'n11', ar: 'الْمِفْتَاحَ', trPron: 'el-miftâha', tr: 'anahtar', type: 'noun', cat: 'Ev & Aile', root: 'ف-ت-ح' },
+      { id: 'n12', ar: 'الْهَاتِفَ', trPron: 'el-hâtife', tr: 'telefon', type: 'noun', cat: 'Ev & Aile', root: 'ه-ت-ف' },
+      { id: 'n13', ar: 'الْحَقِيبَةَ', trPron: 'el-hakîbete', tr: 'çanta', type: 'noun', cat: 'Çocuk & Ebeveyn', root: 'ح-ق-ب' },
+      { id: 'n18', ar: 'الْخُبْزَ', trPron: 'el-hubze', tr: 'ekmek', type: 'noun', cat: 'Ev & Aile', root: 'خ-ب-ز' },
+      { id: 'n19', ar: 'الْمَاءَ', trPron: 'el-mâe', tr: 'su', type: 'noun', cat: 'Ev & Aile', root: 'م-و-ه' },
+      { id: 'n20', ar: 'الشَّايَ', trPron: 'eş-şâye', tr: 'çay', type: 'noun', cat: 'Ev & Aile', root: 'ش-ا-ي' },
+      { id: 'n21', ar: 'الْقَهْوَةَ', trPron: 'el-kahvete', tr: 'kahve', type: 'noun', cat: 'Ev & Aile', root: 'ق-ه-و' }
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', name: 'Tümü (250)' },
+      { id: 'joker', name: '1. Joker İskeletler (50)' },
+      { id: 'home', name: '2. Ev & Eş (50)' },
+      { id: 'kids', name: '3. Çocuklar & Ebeveyn (50)' },
+      { id: 'school', name: '4. Okul & Öğretmenlik (60)' },
+      { id: 'social', name: '5. Zaman & Sosyal (40)' }
+    ];
+
+    const speakArabic = (text, rate = 0.9, onStartCallback, onEndCallback) => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const cleanText = text.replace(/\.\.\./g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'ar-SA';
+        utterance.rate = rate;
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find((v) => v.lang.includes('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
+        if (onStartCallback) utterance.onstart = onStartCallback;
+        if (onEndCallback) {
+          utterance.onend = onEndCallback;
+          utterance.onerror = onEndCallback;
+        }
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        if (onEndCallback) onEndCallback();
+      }
+    };
+
+    const getPatternByGender = (pattern, isFem) => {
+      if (!isFem) return { ar: pattern.ar, trPron: pattern.trPron };
+      if (pattern.femAr && pattern.femPron) return { ar: pattern.femAr, trPron: pattern.femPron };
+      return {
+        ar: pattern.ar.replace(/كَ\b/g, 'كِ').replace(/عَلَيْكَ/g, 'عَلَيْكِ').replace(/يُمْكِنُكَ/g, 'يُمْكِنُكِ').replace(/فَضْلِكَ/g, 'فَضْلِكِ'),
+        trPron: pattern.trPron.replace(/ke\b/g, 'ki').replace(/fadlike/g, 'fadliki').replace(/aleyke/g, 'aleyki')
+      };
+    };
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('daily');
+      const [isPhoneFrame, setIsPhoneFrame] = useState(true);
+      const [isSpeaking, setIsSpeaking] = useState(false);
+      const [showFemMode, setShowFemMode] = useState(false);
+
+      const [masteredIds, setMasteredIds] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('ar_mastered_patterns')) || [1, 21, 41, 61]; } catch { return [1, 21, 41, 61]; }
+      });
+      const [dailyCount, setDailyCount] = useState(4);
+
+      useEffect(() => {
+        try { localStorage.setItem('ar_mastered_patterns', JSON.stringify(masteredIds)); } catch {}
+      }, [masteredIds]);
+
+      const playAudio = useCallback((text, rate = 0.95) => {
+        speakArabic(text, rate, () => setIsSpeaking(true), () => setIsSpeaking(false));
+      }, []);
+
+      // 1. Pratik
+      const [srsCategory, setSrsCategory] = useState('all');
+      const [srsIndex, setSrsIndex] = useState(0);
+      const [isCardRevealed, setIsCardRevealed] = useState(false);
+      const srsDeck = useMemo(() => INITIAL_PATTERNS.filter((p) => srsCategory === 'all' || p.category === srsCategory), [srsCategory]);
+      const currentSrsCard = srsDeck[srsIndex % srsDeck.length] || INITIAL_PATTERNS[0];
+      const currentSrsGendered = useMemo(() => getPatternByGender(currentSrsCard, showFemMode), [currentSrsCard, showFemMode]);
+
+      // 2. 250 Kalıp & Ezber Testi
+      const [patternFilterCat, setPatternFilterCat] = useState('all');
+      const [patternsSubMode, setPatternsSubMode] = useState('memorize');
+      const [memQuizType, setMemQuizType] = useState('tr_to_ar');
+      const [memQuestionIdx, setMemQuestionIdx] = useState(0);
+      const [memSelectedAnswer, setMemSelectedAnswer] = useState(null);
+      const [memScore, setMemScore] = useState(0);
+
+      const filteredPatterns = useMemo(() => {
+        return INITIAL_PATTERNS.filter((p) => patternFilterCat === 'all' || p.category === patternFilterCat);
+      }, [patternFilterCat]);
+
+      const currentMemQuestion = useMemo(() => {
+        const pool = filteredPatterns.length >= 4 ? filteredPatterns : INITIAL_PATTERNS;
+        const target = pool[memQuestionIdx % pool.length] || INITIAL_PATTERNS[0];
+        const otherPool = INITIAL_PATTERNS.filter((p) => p.id !== target.id);
+        const options = [
+          target,
+          otherPool[(target.id * 3) % otherPool.length],
+          otherPool[(target.id * 7 + 5) % otherPool.length],
+          otherPool[(target.id * 11 + 9) % otherPool.length]
+        ].sort((a, b) => ((a.id * 17 + memQuestionIdx) % 5) - ((b.id * 17 + memQuestionIdx) % 5));
+        return { target, options };
+      }, [filteredPatterns, memQuestionIdx]);
+
+      // 3. Kırık Meal
+      const [brokenCatFilter, setBrokenCatFilter] = useState('all');
+      const [brokenSearch, setBrokenSearch] = useState('');
+      const [hideBrokenTr, setHideBrokenTr] = useState(false);
+      const filteredBrokenPatterns = useMemo(() => {
+        return INITIAL_PATTERNS.filter((p) => {
+          const matchesCat = brokenCatFilter === 'all' || p.category === brokenCatFilter;
+          const q = brokenSearch.toLowerCase().trim();
+          return matchesCat && (!q || p.ar.includes(q) || p.tr.toLowerCase().includes(q) || p.trPron.toLowerCase().includes(q));
+        });
+      }, [brokenCatFilter, brokenSearch]);
+
+      // 4. Laboratuvar
+      const slotPatterns = useMemo(() => INITIAL_PATTERNS.filter((p) => p.hasSlot), []);
+      const [selectedLabPatternId, setSelectedLabPatternId] = useState(1);
+      const [selectedSlotItemId, setSelectedSlotItemId] = useState('v1');
+      const currentLabPattern = useMemo(() => slotPatterns.find((p) => p.id === Number(selectedLabPatternId)) || slotPatterns[0], [selectedLabPatternId, slotPatterns]);
+      const compatibleSlotItems = useMemo(() => INITIAL_VOCABULARY.filter((v) => v.type === currentLabPattern?.slotType), [currentLabPattern]);
+      const currentSlotItem = useMemo(() => compatibleSlotItems.find((v) => v.id === selectedSlotItemId) || compatibleSlotItems[0], [compatibleSlotItems, selectedSlotItemId]);
+
+      // 5. Sözlük
+      const [dictSearch, setDictSearch] = useState('');
+
+      return (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-start sm:justify-center sm:py-4 font-sans select-none">
+          <div className={`w-full ${isPhoneFrame ? 'max-w-md sm:rounded-[36px] sm:border-[6px] sm:border-slate-800 sm:h-[860px]' : 'max-w-4xl sm:rounded-2xl sm:h-[90vh]'} h-[100dvh] bg-slate-50 text-slate-800 shadow-2xl flex flex-col justify-between overflow-hidden relative`}>
+            {/* ÜST DURUM ÇUBUĞU */}
+            <header className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-900 text-white px-4 pt-3 pb-2.5 shadow-md shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-emerald-300" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm font-bold flex items-center gap-1.5">
+                      Arapça Kalıp Ustası
+                      <span className="text-[10px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded-md font-semibold">250 KALIP</span>
+                    </h1>
+                    <p className="text-[11px] text-emerald-200/80">{masteredIds.length}/250 Ezberlendi</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFemMode(!showFemMode)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border ${showFemMode ? 'bg-pink-600 border-pink-400 text-white' : 'bg-emerald-800/80 border-emerald-600/60 text-emerald-100'}`}
+                >
+                  {showFemMode ? 'Dişil (ـكِ)' : 'Eril (ـكَ)'}
+                </button>
+              </div>
+            </header>
+
+            {/* ANA İÇERİK */}
+            <main className="flex-1 overflow-y-auto p-3.5 space-y-3">
+              {activeTab === 'daily' && (
+                <div className="h-full flex flex-col justify-between gap-3">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { setSrsCategory(cat.id); setSrsIndex(0); setIsCardRevealed(false); }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${srsCategory === cat.id ? 'bg-emerald-700 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div
+                    onClick={() => { setIsCardRevealed(true); playAudio(currentSrsGendered.ar, 0.9); }}
+                    className="flex-1 bg-white rounded-3xl shadow-md border border-slate-200 p-5 flex flex-col justify-center text-center space-y-4 cursor-pointer"
+                  >
+                    <span className="text-xs font-bold text-emerald-700">#{currentSrsCard.id} • ÖNCE TÜRKÇE DÜŞÜN, SESLİ ARAPÇA SÖYLE</span>
+                    <h2 className="text-xl font-extrabold text-slate-800">"{currentSrsCard.tr}"</h2>
+                    {isCardRevealed ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2 animate-fade-in">
+                        <p dir="rtl" className="text-3xl font-bold text-emerald-950 font-serif">{currentSrsGendered.ar}</p>
+                        <p className="text-sm font-bold text-emerald-700 italic">{currentSrsGendered.trPron}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400">Cevabı görmek ve dinlemek için dokunun</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white rounded-3xl p-3.5 shadow-lg border border-slate-200 space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <button onClick={() => playAudio(currentSrsGendered.ar, 0.95)} className="h-11 rounded-xl bg-emerald-100 text-emerald-900 font-bold text-xs">Dinle 1x</button>
+                      <button onClick={() => playAudio(currentSrsGendered.ar, 0.6)} className="h-11 rounded-xl bg-amber-100 text-amber-900 font-bold text-xs">Yavaş 0.6x</button>
+                      <button onClick={() => { setIsCardRevealed(false); setSrsIndex((i) => i + 1); }} className="h-11 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">Sonraki ➔</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'patterns' && (
+                <div className="space-y-3">
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200 space-y-2">
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
+                      <button onClick={() => setPatternsSubMode('memorize')} className={`py-2 rounded-lg text-xs font-extrabold ${patternsSubMode === 'memorize' ? 'bg-emerald-700 text-white' : 'text-slate-600'}`}>Ezber Testi</button>
+                      <button onClick={() => setPatternsSubMode('list')} className={`py-2 rounded-lg text-xs font-extrabold ${patternsSubMode === 'list' ? 'bg-emerald-700 text-white' : 'text-slate-600'}`}>Tüm 250 Kalıp</button>
+                    </div>
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                      {CATEGORIES.map((cat) => (
+                        <button key={cat.id} onClick={() => { setPatternFilterCat(cat.id); setMemSelectedAnswer(null); }} className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap ${patternFilterCat === cat.id ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {patternsSubMode === 'memorize' ? (
+                    <div className="bg-white rounded-3xl p-4 border border-slate-200 space-y-3">
+                      <div className="flex justify-between text-xs font-bold text-emerald-800">
+                        <span>Soru #{currentMemQuestion.target.id}</span>
+                        <span>Puan: {memScore}</span>
+                      </div>
+                      <div className="bg-slate-50 rounded-2xl p-4 text-center">
+                        <p className="text-base font-extrabold text-slate-800">"{currentMemQuestion.target.tr}"</p>
+                      </div>
+                      <div className="space-y-2">
+                        {currentMemQuestion.options.map((opt) => {
+                          const isCorrect = opt.id === currentMemQuestion.target.id;
+                          const isChosen = memSelectedAnswer === opt.id;
+                          let cls = 'bg-slate-50 border-slate-200';
+                          if (memSelectedAnswer !== null) {
+                            if (isCorrect) cls = 'bg-emerald-100 border-emerald-500';
+                            else if (isChosen) cls = 'bg-rose-100 border-rose-400';
+                          }
+                          return (
+                            <button
+                              key={opt.id}
+                              onClick={() => {
+                                if (memSelectedAnswer !== null) return;
+                                setMemSelectedAnswer(opt.id);
+                                playAudio(currentMemQuestion.target.ar, 0.95);
+                                if (isCorrect) setMemScore((s) => s + 10);
+                              }}
+                              className={`w-full p-3.5 rounded-2xl border flex items-center justify-between ${cls}`}
+                            >
+                              <span className="text-[11px] text-emerald-700 italic">{opt.trPron}</span>
+                              <span dir="rtl" className="text-xl font-bold font-serif">{opt.ar}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {memSelectedAnswer !== null && (
+                        <button onClick={() => { setMemSelectedAnswer(null); setMemQuestionIdx((i) => i + 1); }} className="w-full py-3 rounded-2xl bg-emerald-600 text-white font-extrabold text-xs">
+                          Sonraki Soru ➔
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredPatterns.map((p) => (
+                        <div key={p.id} className="bg-white rounded-2xl p-3.5 border border-slate-200 space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-bold text-slate-400">#{p.id}</span>
+                            <button onClick={() => playAudio(p.ar, 0.9)} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">Dinle</button>
+                          </div>
+                          <p dir="rtl" className="text-2xl font-bold font-serif text-right">{p.ar}</p>
+                          <p className="text-xs font-bold text-emerald-700 italic">{p.trPron}</p>
+                          <p className="text-sm font-extrabold text-slate-800">{p.tr}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'broken' && (
+                <div className="space-y-3">
+                  <div className="bg-white rounded-2xl p-3.5 border border-slate-200 space-y-2 sticky top-0 z-10">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xs font-extrabold text-slate-800">250 Cümle Kırık Meal ({filteredBrokenPatterns.length})</h2>
+                      <button onClick={() => setHideBrokenTr(!hideBrokenTr)} className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-bold">
+                        {hideBrokenTr ? 'Mealleri Göster' : 'Mealleri Gizle'}
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={brokenSearch}
+                      onChange={(e) => setBrokenSearch(e.target.value)}
+                      placeholder="Cümle veya kelime ara..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    />
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                      {CATEGORIES.map((cat) => (
+                        <button key={cat.id} onClick={() => setBrokenCatFilter(cat.id)} className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap ${brokenCatFilter === cat.id ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {filteredBrokenPatterns.map((p) => (
+                    <div key={p.id} className="bg-white rounded-3xl p-4 border border-slate-200 space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full">#{p.id}</span>
+                        <button onClick={() => playAudio(p.ar, 0.9)} className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">Tümünü Dinle</button>
+                      </div>
+                      <p dir="rtl" className="text-2xl font-bold font-serif text-right">{p.ar}</p>
+                      <p className="text-xs font-bold text-emerald-700 italic">{p.trPron}</p>
+                      <p className="text-sm font-extrabold text-slate-800">{p.tr}</p>
+                      <div dir="rtl" className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
+                        {p.words?.map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => playAudio(item.w, 0.85)}
+                            className="bg-emerald-50/70 border border-emerald-200 rounded-xl px-2.5 py-1.5 flex flex-col items-center min-w-[70px]"
+                          >
+                            <span className="text-base font-bold font-serif text-emerald-950">{item.w}</span>
+                            <span dir="ltr" className={`text-[10px] font-bold text-slate-700 ${hideBrokenTr ? 'blur-sm' : ''}`}>{item.m}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'lab' && (
+                <div className="space-y-3">
+                  <div className="bg-emerald-900 text-white rounded-3xl p-4 text-center space-y-2">
+                    <p dir="rtl" className="text-2xl font-bold font-serif text-amber-300">
+                      {currentLabPattern.ar.replace('...', currentSlotItem?.ar || '')}
+                    </p>
+                    <p className="text-xs text-emerald-200 italic">
+                      {currentLabPattern.trPron.replace('...', currentSlotItem?.trPron || '')}
+                    </p>
+                    <button
+                      onClick={() => playAudio(currentLabPattern.ar.replace('...', currentSlotItem?.ar || ''), 0.9)}
+                      className="bg-amber-400 text-slate-950 font-extrabold px-4 py-1.5 rounded-xl text-xs"
+                    >
+                      Cümleyi Seslendir
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200 space-y-2">
+                    <h3 className="text-xs font-extrabold">1. Kalıp Seç</h3>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                      {slotPatterns.map((p) => (
+                        <button key={p.id} onClick={() => setSelectedLabPatternId(p.id)} className={`shrink-0 w-48 p-2.5 rounded-xl border text-right ${p.id === currentLabPattern.id ? 'bg-emerald-50 border-emerald-600' : 'bg-slate-50 border-slate-200'}`}>
+                          <div dir="rtl" className="text-base font-bold font-serif">{p.ar}</div>
+                          <div className="text-[11px] text-slate-600 text-left truncate">{p.tr}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200 space-y-2">
+                    <h3 className="text-xs font-extrabold">2. Kelimeye Dokun</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {compatibleSlotItems.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedSlotItemId(item.id);
+                            playAudio(currentLabPattern.ar.replace('...', item.ar), 0.9);
+                          }}
+                          className={`p-2.5 rounded-xl border text-left ${currentSlotItem?.id === item.id ? 'bg-amber-50 border-amber-500' : 'bg-slate-50 border-slate-200'}`}
+                        >
+                          <div dir="rtl" className="text-lg font-bold font-serif text-right">{item.ar}</div>
+                          <div className="text-xs font-bold text-slate-700">{item.tr}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'dictionary' && (
+                <div className="space-y-3">
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200">
+                    <input
+                      type="text"
+                      value={dictSearch}
+                      onChange={(e) => setDictSearch(e.target.value)}
+                      placeholder="Sözlükte ara (Türkçe veya Arapça)..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    />
+                  </div>
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200 divide-y divide-slate-100">
+                    {INITIAL_VOCABULARY.filter((w) => !dictSearch || w.tr.toLowerCase().includes(dictSearch.toLowerCase()) || w.ar.includes(dictSearch)).map((w) => (
+                      <div key={w.id} className="py-2.5 flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-extrabold text-slate-800">{w.tr}</div>
+                          <div className="text-[11px] text-emerald-700 italic">{w.trPron}</div>
+                        </div>
+                        <button onClick={() => playAudio(w.ar, 0.85)} dir="rtl" className="text-xl font-bold font-serif text-slate-900">
+                          {w.ar} 🔊
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </main>
+
+            {/* ALT MENÜ */}
+            <nav className="bg-white border-t border-slate-200 px-1.5 py-1.5 shrink-0">
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { id: 'daily', label: 'Pratik', icon: Repeat },
+                  { id: 'patterns', label: '250 Ezber', icon: Trophy },
+                  { id: 'broken', label: 'Kırık Meal', icon: BookOpen },
+                  { id: 'lab', label: 'Laboratuvar', icon: Sliders },
+                  { id: 'dictionary', label: 'Sözlük', icon: Search }
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex flex-col items-center justify-center py-1.5 rounded-2xl min-h-[50px] ${isActive ? 'bg-emerald-50 text-emerald-800 font-extrabold' : 'text-slate-400'}`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-[10px] mt-1">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
